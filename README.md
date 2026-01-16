@@ -1,1 +1,16 @@
 # Team-Pluto-CS446-Project
+
+Description of our project will be added here.
+
+## Team
+
+Brandon Ngo (b6ngo)
+Andre Slavescu (aslavesc)
+Ibrahim Ahmed (i48ahmed)
+Ishan Baliyan (ibaliyan)
+Anay Baid (a2baid)
+Ali Al Shammaa (a8alsham)
+
+## Relevant Links
+
+[Team Contract](./docs/team-contract.md)
