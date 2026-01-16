@@ -14,3 +14,5 @@ Ali Al Shammaa (a8alsham)
 ## Relevant Links
 
 [Team Contract](./docs/team-contract.md)
+[Pull Request Template](./github/PULL_REQUEST_TEMPLATE.md)
+[Issue Request Template](./github/ISSUE_TEMPLATE.md)
