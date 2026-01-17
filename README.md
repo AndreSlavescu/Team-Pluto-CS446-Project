@@ -23,3 +23,5 @@ Ali Al Shammaa (a8alsham)
 [Pull Request Template](./github/PULL_REQUEST_TEMPLATE.md)
 
 [Issue Request Template](./github/ISSUE_TEMPLATE.md)
+
+[Contributing](./.github/CONTRIBUTING.md)
