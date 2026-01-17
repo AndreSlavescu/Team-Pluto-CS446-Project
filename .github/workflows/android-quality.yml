@@ -13,7 +13,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Detect Gradle
+        id: gradle
+        run: |
+          if [ -f gradlew ] || [ -f gradle/wrapper/gradle-wrapper.properties ]; then
+            echo "has_gradle=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_gradle=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Set up JDK 17
+        if: steps.gradle.outputs.has_gradle == 'true'
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -21,12 +31,18 @@ jobs:
           cache: gradle
 
       - name: Set up Android SDK
+        if: steps.gradle.outputs.has_gradle == 'true'
         uses: android-actions/setup-android@v3
         with:
           api-level: 34
           build-tools: 34.0.0
 
       - name: Run Android quality checks
+        if: steps.gradle.outputs.has_gradle == 'true'
         run: |
           chmod +x scripts/android-quality.sh
           scripts/android-quality.sh --ci
+
+      - name: Skip Android checks
+        if: steps.gradle.outputs.has_gradle != 'true'
+        run: echo "No Gradle wrapper found; skipping Android quality checks."
