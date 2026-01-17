@@ -1,6 +1,6 @@
 # Team-Pluto-CS446-Project
 
-Description of our project will be added here.
+Our team will be building an application that uses AI to build / clone other applications.
 
 ## Team
 

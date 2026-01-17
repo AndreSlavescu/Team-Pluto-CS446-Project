@@ -2,15 +2,18 @@
 
 ## Roles
 
-- XXX is our team lead, and is responsible for coordinating the project.
-- XXX leads the [front-end/back-end/both] design [for YYY module(s)].
-- XXX leads the integration and end-to-end testing of the app. 
-- XXX leads the design and maintenance of the database.
+- Brandon is our team lead
+- Ibrahim is our frontend lead
+- Anay is our database design and maintance lead
+- Andre is our devops and AI stack lead
+- Ali is our backend lead
+- Ishan is our __XXX__ lead
 
 ## Communication
 
-- Our team will use [Discord/Slack/Teams] group chat to communicate project-related matters.
-- We will meet every week at XXX.
+- Our team will use Discord group chat to communicate project-related matters.
+- We will meet weekly on Saturday at 4PM EST (mandatory).
+- We will meet weekly on Thursday after class to discuss short updates (optional).
 
 ## Meetings
 
@@ -22,5 +25,5 @@
 - Decisions can be made during meetings even some members are absent.
 - Each member will take turns listening as well as talking, and active listening will be a strategy for all group discussions.
 
-- XXX will post the agenda for the week in our group chat each Monday.
-- XXX will take notes during all meetings.
+- Brandon will post the agenda for the week in our group chat each Monday.
+- Anay will take notes during all meetings.
