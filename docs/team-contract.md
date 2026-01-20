@@ -7,7 +7,7 @@
 - Anay is our database design and maintenance lead
 - Andre is our devops and AI stack lead
 - Ali is our backend lead
-- Ishan is our __XXX__ lead
+- Ishan is our mobile dev and ui/ux/px lead
 
 ## Communication
 
