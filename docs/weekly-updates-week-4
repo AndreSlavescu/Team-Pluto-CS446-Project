@@ -1,0 +1,35 @@
+## Week 4  
+**Jan 25 – Feb 2**
+
+We had extensive group meetings on Discord, including:
+- Sat Jan 24  
+- Thurs Jan 29  
+- Sat Jan 31  
+(all via a team Discord server)
+
+### Topics Discussed
+- Assigned team roles, signed the team contract, and set up our team
+- Brainstormed project ideas and settled on creating an **AI app maker** that generates code which compiles inside the app
+- Andre set up the Android project codebase structure  
+  - PR: https://github.com/AndreSlavescu/Team-Pluto-CS446-Project/pull/3
+- Established that **each commit must be merged via a pull request**
+- Planned our **[P3 proposal](https://docs.google.com/document/d/1nkpUWtLKtpFB6kV3QF-k3JekkKwRt9wvPuHHnuEV0o4/edit?usp=sharing)** and divided the write-up into **6 subsections**, one per team member
+
+### Division of Work (P3 Proposal)
+- **Andre Slavescu**  
+  - Intro write-up (paragraphs answering the project topic and questions)
+- **Ishan Baliyan**  
+  - Intro diagrams (figures, Figma app design)
+- **Brandon Ngo**  
+  - Design considerations (features, feasibility discussion, stakeholders, trade-offs)
+- **Ali Al Shammaa**  
+  - Hand-drawn use case diagrams (architecture, planning)
+- **Anay Baid**  
+  - Use case write-up and tables breaking down users (user scenarios, personas, product vision, etc.)
+- **Ibrahim Ahmed**  
+  - Project requirements (functional and non-functional requirements, timelines, deadlines, architecture, and overall planning)
+
+### Team Structure Planning
+In our most recent meeting, we assigned higher-level roles to divide the team into **frontend** and **backend** subteams. We decided to:
+- Start by building an **MVP**
+- Define more detailed roles and features later as the project progresses
