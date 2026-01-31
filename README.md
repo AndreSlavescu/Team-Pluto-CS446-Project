@@ -25,3 +25,7 @@ Ali Al Shammaa (a8alsham)
 [Issue Request Template](./github/ISSUE_TEMPLATE.md)
 
 [Contributing](./.github/CONTRIBUTING.md)
+
+## References
+
+gpt-5.2-codex was used in generating some of this code, see commit names.
