@@ -90,7 +90,9 @@ def _build_manifest(prompt: str, blueprint: Optional[Dict[str, Any]]) -> Dict[st
     }
 
 
-def _create_project_bundle(target_dir: Path, prompt: str, blueprint: Optional[Dict[str, Any]]) -> None:
+def _create_project_bundle(
+    target_dir: Path, prompt: str, blueprint: Optional[Dict[str, Any]]
+) -> None:
     target_dir.mkdir(parents=True, exist_ok=True)
     (target_dir / "README.md").write_text(
         "# Pluto Generated Android Project\n\n"
@@ -103,7 +105,9 @@ def _create_project_bundle(target_dir: Path, prompt: str, blueprint: Optional[Di
         (target_dir / "blueprint.json").write_text(json.dumps(blueprint, indent=2))
         _write_webview_bundle(target_dir, blueprint)
     else:
-        (target_dir / "blueprint.txt").write_text("Blueprint generation failed. See logs.")
+        (target_dir / "blueprint.txt").write_text(
+            "Blueprint generation failed. See logs."
+        )
 
 
 def _write_webview_bundle(target_dir: Path, blueprint: Dict[str, Any]) -> None:
@@ -114,128 +118,134 @@ def _write_webview_bundle(target_dir: Path, blueprint: Dict[str, Any]) -> None:
     notes = blueprint.get("notes") or ""
 
     (target_dir / "index.html").write_text(
-        "\n".join([
-            "<!doctype html>",
-            "<html lang=\"en\">",
-            "<head>",
-            "  <meta charset=\"utf-8\" />",
-            f"  <title>{display_name}</title>",
-            "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />",
-            "  <link rel=\"stylesheet\" href=\"styles.css\" />",
-            "</head>",
-            "<body>",
-            "  <div class=\"app\">",
-            "    <header class=\"header\">",
-            f"      <h1>{display_name}</h1>",
-            "      <p class=\"subtitle\">Offline-first prototype</p>",
-            "    </header>",
-            "    <section class=\"card\">",
-            "      <h2>Features</h2>",
-            "      <ul id=\"features\"></ul>",
-            "    </section>",
-            "    <section class=\"card\">",
-            "      <h2>Screens</h2>",
-            "      <ul id=\"screens\"></ul>",
-            "    </section>",
-            "    <section class=\"card\">",
-            "      <h2>Data Models</h2>",
-            "      <ul id=\"models\"></ul>",
-            "    </section>",
-            "    <section class=\"card notes\">",
-            "      <h2>Notes</h2>",
-            "      <p id=\"notes\"></p>",
-            "    </section>",
-            "  </div>",
-            "  <script src=\"app.js\"></script>",
-            "</body>",
-            "</html>",
-        ])
+        "\n".join(
+            [
+                "<!doctype html>",
+                '<html lang="en">',
+                "<head>",
+                '  <meta charset="utf-8" />',
+                f"  <title>{display_name}</title>",
+                '  <meta name="viewport" content="width=device-width, initial-scale=1" />',
+                '  <link rel="stylesheet" href="styles.css" />',
+                "</head>",
+                "<body>",
+                '  <div class="app">',
+                '    <header class="header">',
+                f"      <h1>{display_name}</h1>",
+                '      <p class="subtitle">Offline-first prototype</p>',
+                "    </header>",
+                '    <section class="card">',
+                "      <h2>Features</h2>",
+                '      <ul id="features"></ul>',
+                "    </section>",
+                '    <section class="card">',
+                "      <h2>Screens</h2>",
+                '      <ul id="screens"></ul>',
+                "    </section>",
+                '    <section class="card">',
+                "      <h2>Data Models</h2>",
+                '      <ul id="models"></ul>',
+                "    </section>",
+                '    <section class="card notes">',
+                "      <h2>Notes</h2>",
+                '      <p id="notes"></p>',
+                "    </section>",
+                "  </div>",
+                '  <script src="app.js"></script>',
+                "</body>",
+                "</html>",
+            ]
+        )
     )
 
     (target_dir / "styles.css").write_text(
-        "\n".join([
-            ":root {",
-            "  --bg: #0e0f12;",
-            "  --card: #1a1d24;",
-            "  --accent: #3bd6c6;",
-            "  --text: #f4f7ff;",
-            "  --muted: #9aa3b2;",
-            "}",
-            "* { box-sizing: border-box; }",
-            "body {",
-            "  margin: 0;",
-            "  font-family: \"Space Grotesk\", system-ui, sans-serif;",
-            "  background: radial-gradient(circle at top, #18202a, #0e0f12 60%);",
-            "  color: var(--text);",
-            "}",
-            ".app {",
-            "  max-width: 900px;",
-            "  margin: 0 auto;",
-            "  padding: 32px 20px 48px;",
-            "}",
-            ".header h1 {",
-            "  margin: 0 0 6px;",
-            "  font-size: 2.2rem;",
-            "  letter-spacing: -0.02em;",
-            "}",
-            ".subtitle {",
-            "  margin: 0 0 24px;",
-            "  color: var(--muted);",
-            "}",
-            ".card {",
-            "  background: var(--card);",
-            "  border-radius: 16px;",
-            "  padding: 18px 20px;",
-            "  margin-bottom: 16px;",
-            "  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);",
-            "}",
-            ".card h2 {",
-            "  margin: 0 0 12px;",
-            "  color: var(--accent);",
-            "  font-size: 1.1rem;",
-            "}",
-            "ul {",
-            "  margin: 0;",
-            "  padding-left: 18px;",
-            "  color: var(--text);",
-            "}",
-            ".notes p {",
-            "  margin: 0;",
-            "  color: var(--muted);",
-            "}",
-        ])
+        "\n".join(
+            [
+                ":root {",
+                "  --bg: #0e0f12;",
+                "  --card: #1a1d24;",
+                "  --accent: #3bd6c6;",
+                "  --text: #f4f7ff;",
+                "  --muted: #9aa3b2;",
+                "}",
+                "* { box-sizing: border-box; }",
+                "body {",
+                "  margin: 0;",
+                '  font-family: "Space Grotesk", system-ui, sans-serif;',
+                "  background: radial-gradient(circle at top, #18202a, #0e0f12 60%);",
+                "  color: var(--text);",
+                "}",
+                ".app {",
+                "  max-width: 900px;",
+                "  margin: 0 auto;",
+                "  padding: 32px 20px 48px;",
+                "}",
+                ".header h1 {",
+                "  margin: 0 0 6px;",
+                "  font-size: 2.2rem;",
+                "  letter-spacing: -0.02em;",
+                "}",
+                ".subtitle {",
+                "  margin: 0 0 24px;",
+                "  color: var(--muted);",
+                "}",
+                ".card {",
+                "  background: var(--card);",
+                "  border-radius: 16px;",
+                "  padding: 18px 20px;",
+                "  margin-bottom: 16px;",
+                "  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);",
+                "}",
+                ".card h2 {",
+                "  margin: 0 0 12px;",
+                "  color: var(--accent);",
+                "  font-size: 1.1rem;",
+                "}",
+                "ul {",
+                "  margin: 0;",
+                "  padding-left: 18px;",
+                "  color: var(--text);",
+                "}",
+                ".notes p {",
+                "  margin: 0;",
+                "  color: var(--muted);",
+                "}",
+            ]
+        )
     )
 
     (target_dir / "app.js").write_text(
-        "\n".join([
-            "const data = {",
-            f"  features: {json.dumps(features)},",
-            f"  screens: {json.dumps(screens)},",
-            f"  models: {json.dumps(data_models)},",
-            f"  notes: {json.dumps(notes)},",
-            "};",
-            "",
-            "function fillList(id, items) {",
-            "  const list = document.getElementById(id);",
-            "  list.innerHTML = '';",
-            "  if (!items || items.length === 0) {",
-            "    const li = document.createElement('li');",
-            "    li.textContent = 'No items provided.';",
-            "    list.appendChild(li);",
-            "    return;",
-            "  }",
-            "  items.forEach((item) => {",
-            "    const li = document.createElement('li');",
-            "    li.textContent = item;",
-            "    list.appendChild(li);",
-            "  });",
-            "}",
-            "",
-            "fillList('features', data.features);",
-            "fillList('screens', data.screens);",
-            "fillList('models', data.models);",
-            "document.getElementById('notes').textContent = data.notes || 'No notes provided.';",
-        ])
+        "\n".join(
+            [
+                "const data = {",
+                f"  features: {json.dumps(features)},",
+                f"  screens: {json.dumps(screens)},",
+                f"  models: {json.dumps(data_models)},",
+                f"  notes: {json.dumps(notes)},",
+                "};",
+                "",
+                "function fillList(id, items) {",
+                "  const list = document.getElementById(id);",
+                "  list.innerHTML = '';",
+                "  if (!items || items.length === 0) {",
+                "    const li = document.createElement('li');",
+                "    li.textContent = 'No items provided.';",
+                "    list.appendChild(li);",
+                "    return;",
+                "  }",
+                "  items.forEach((item) => {",
+                "    const li = document.createElement('li');",
+                "    li.textContent = item;",
+                "    list.appendChild(li);",
+                "  });",
+                "}",
+                "",
+                "fillList('features', data.features);",
+                "fillList('screens', data.screens);",
+                "fillList('models', data.models);",
+                "document.getElementById('notes').textContent = data.notes || 'No notes provided.';",
+            ]
+        )
     )
 
 
@@ -262,7 +272,9 @@ def run_generation_job(store: DataStore, job_id: str) -> None:
     constraints = request.get("constraints") or {}
     input_images = request.get("inputImages") or []
 
-    max_seconds = constraints.get("maxGenerationSeconds") or config.DEFAULT_MAX_GENERATION_SECONDS
+    max_seconds = (
+        constraints.get("maxGenerationSeconds") or config.DEFAULT_MAX_GENERATION_SECONDS
+    )
     started_at = time.monotonic()
 
     if job.get("cancelRequested"):
@@ -275,10 +287,12 @@ def run_generation_job(store: DataStore, job_id: str) -> None:
         if not upload:
             continue
         image_path = Path(upload["path"])
-        content.append({
-            "type": "input_image",
-            "image_url": _encode_image(image_path, upload["mimeType"]),
-        })
+        content.append(
+            {
+                "type": "input_image",
+                "image_url": _encode_image(image_path, upload["mimeType"]),
+            }
+        )
 
     store.set_progress(job_id, "CALLING_LLM", 40, "Calling GPT-5.2 Codex")
     store.add_log(job_id, "INFO", "Calling OpenAI model")
@@ -306,24 +320,30 @@ def run_generation_job(store: DataStore, job_id: str) -> None:
         raw_output = response.output_text
         blueprint = _parse_json(raw_output or "")
     except Exception as exc:  # pragma: no cover - defensive logging
-        store.update_job(job_id, {
-            "status": "FAILED",
-            "error": {
-                "code": "OPENAI_ERROR",
-                "message": str(exc),
+        store.update_job(
+            job_id,
+            {
+                "status": "FAILED",
+                "error": {
+                    "code": "OPENAI_ERROR",
+                    "message": str(exc),
+                },
             },
-        })
+        )
         store.add_log(job_id, "ERROR", f"OpenAI call failed: {exc}")
         return
 
     if time.monotonic() - started_at > max_seconds:
-        store.update_job(job_id, {
-            "status": "FAILED",
-            "error": {
-                "code": "TIMEOUT",
-                "message": "Generation exceeded time limit",
+        store.update_job(
+            job_id,
+            {
+                "status": "FAILED",
+                "error": {
+                    "code": "TIMEOUT",
+                    "message": "Generation exceeded time limit",
+                },
             },
-        })
+        )
         store.add_log(job_id, "ERROR", "Generation timed out")
         return
 
@@ -362,8 +382,11 @@ def run_generation_job(store: DataStore, job_id: str) -> None:
     )
 
     store.set_progress(job_id, "FINALIZING", 100, "Generation complete")
-    store.update_job(job_id, {
-        "status": "SUCCEEDED",
-        "resultVersionId": version_record["versionId"],
-    })
+    store.update_job(
+        job_id,
+        {
+            "status": "SUCCEEDED",
+            "resultVersionId": version_record["versionId"],
+        },
+    )
     store.add_log(job_id, "INFO", "Generation succeeded")

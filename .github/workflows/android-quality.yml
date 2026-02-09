@@ -39,9 +39,7 @@ jobs:
 
       - name: Run Android quality checks
         if: steps.gradle.outputs.has_gradle == 'true'
-        run: |
-          chmod +x scripts/android-quality.sh
-          scripts/android-quality.sh --ci
+        run: make quality-android
 
       - name: Skip Android checks
         if: steps.gradle.outputs.has_gradle != 'true'
