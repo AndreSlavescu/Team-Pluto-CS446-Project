@@ -29,3 +29,17 @@ Ali Al Shammaa (a8alsham)
 ## References
 
 gpt-5.2-codex was used in generating some of this code, see commit names.
+
+## Code Quality
+
+Formatting
+```bash
+# formats both the android and python paths
+make format
+```
+
+Linting
+```bash
+# lints both the android and pyhton paths
+make lint
+```
