@@ -37,6 +37,12 @@ app.add_middleware(
 )
 
 
+@app.get("/")
+async def health_check() -> Dict[str, str]:
+    """Health check endpoint for deployment platforms."""
+    return {"status": "healthy", "service": "pluto-backend"}
+
+
 def _iso_to_dt(value: str) -> datetime:
     return store.parse_iso(value)
 
