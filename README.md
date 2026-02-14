@@ -40,6 +40,6 @@ make format
 
 Linting
 ```bash
-# lints both the android and pyhton paths
+# lints both the android and python paths
 make lint
 ```

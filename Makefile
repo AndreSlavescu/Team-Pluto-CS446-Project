@@ -1,5 +1,10 @@
 .PHONY: format format-python format-android lint lint-python lint-android test-android quality-android install-python-tools
 
+GRADLE_ARGS :=
+ifdef CI
+	GRADLE_ARGS += --no-daemon
+endif
+
 # Install Python formatting and linting tools
 install-python-tools:
 	pip install black ruff
@@ -21,21 +26,21 @@ lint-python:
 # Android targets
 format-android:
 	@if [ -f gradlew ]; then \
-		chmod +x gradlew && ./gradlew ktlintFormat; \
+		chmod +x gradlew && ./gradlew $(GRADLE_ARGS) ktlintFormat; \
 	else \
 		echo "gradlew not found; skipping Android formatting."; \
 	fi
 
 lint-android:
 	@if [ -f gradlew ]; then \
-		chmod +x gradlew && ./gradlew ktlintCheck lint; \
+		chmod +x gradlew && ./gradlew $(GRADLE_ARGS) ktlintCheck lint; \
 	else \
 		echo "gradlew not found; skipping Android linting."; \
 	fi
 
 test-android:
 	@if [ -f gradlew ]; then \
-		chmod +x gradlew && ./gradlew testDebugUnitTest; \
+		chmod +x gradlew && ./gradlew $(GRADLE_ARGS) testDebugUnitTest; \
 	else \
 		echo "gradlew not found; skipping Android tests."; \
 	fi
