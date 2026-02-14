@@ -14,9 +14,15 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "0.1.0"
+
+        buildConfigField("String", "API_BASE_URL", "\"https://team-pluto-cs446-project-production.up.railway.app/\"")
     }
 
     buildTypes {
+        debug {
+            // Override with emulator localhost for local dev
+            buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:8000/\"")
+        }
         release {
             isMinifyEnabled = false
         }
@@ -33,6 +39,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

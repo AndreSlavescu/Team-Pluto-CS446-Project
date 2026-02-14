@@ -43,7 +43,7 @@ fun PreviewScreen(
     val error by viewModel.error.collectAsState()
     val appName by viewModel.appName.collectAsState()
 
-    val context = LocalContext.current
+    val context = LocalContext.current.applicationContext
 
     LaunchedEffect(Unit) {
         viewModel.loadPreview(context)
