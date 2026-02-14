@@ -33,7 +33,10 @@ class GenerationViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
 
     private fun startPolling() {
         viewModelScope.launch {
-            while (true) {
+            var attempts = 0
+            val maxAttempts = 150 // 5 minutes at 2 second intervals
+
+            while (attempts < maxAttempts) {
                 try {
                     val job = repository.getJobStatus(jobId)
                     _status.value = job
@@ -52,8 +55,13 @@ class GenerationViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
                     _error.value = e.message ?: "Lost connection to server"
                     return@launch
                 }
+
+                attempts++
                 delay(2000)
             }
+
+            // Timeout after max attempts
+            _error.value = "Generation timed out after 5 minutes"
         }
     }
 }

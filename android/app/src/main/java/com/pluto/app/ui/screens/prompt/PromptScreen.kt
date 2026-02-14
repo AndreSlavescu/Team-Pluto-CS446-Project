@@ -106,12 +106,24 @@ fun PromptScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            val isPromptTooLong = prompt.length > 280
             Text(
                 text = "${prompt.length}/280",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = if (isPromptTooLong) MaterialTheme.colorScheme.error
+                       else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.align(Alignment.End)
             )
+
+            if (isPromptTooLong) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Prompt is too long (max 280 characters)",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.align(Alignment.End)
+                )
+            }
 
             error?.let {
                 Spacer(modifier = Modifier.height(8.dp))
@@ -129,7 +141,7 @@ fun PromptScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                enabled = prompt.isNotBlank() && !isLoading,
+                enabled = prompt.isNotBlank() && !isLoading && !isPromptTooLong,
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary

@@ -108,7 +108,10 @@ fun PreviewScreen(
                                 webViewClient = WebViewClient()
                                 settings.javaScriptEnabled = true
                                 settings.domStorageEnabled = true
+                                // Security: Restrict file access from file URLs
                                 settings.allowFileAccess = true
+                                settings.allowFileAccessFromFileURLs = false
+                                settings.allowUniversalAccessFromFileURLs = false
                                 loadUrl("file://${previewPath}")
                             }
                         },

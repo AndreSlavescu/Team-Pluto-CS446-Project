@@ -58,7 +58,15 @@ class PreviewViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
                         var entry = zip.nextEntry
                         while (entry != null) {
                             if (!entry.isDirectory) {
+                                // Prevent Zip Slip vulnerability - validate the entry path
                                 val file = File(previewDir, entry.name)
+                                val canonicalFile = file.canonicalFile
+                                val canonicalPreviewDir = previewDir.canonicalFile
+
+                                if (!canonicalFile.toPath().startsWith(canonicalPreviewDir.toPath())) {
+                                    throw SecurityException("Zip entry attempted path traversal: ${entry.name}")
+                                }
+
                                 file.parentFile?.mkdirs()
                                 FileOutputStream(file).use { out ->
                                     zip.copyTo(out)
