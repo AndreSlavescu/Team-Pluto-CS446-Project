@@ -32,9 +32,59 @@ uvicorn app.main:app --reload --port 8000
 - `POST /v1/generation-jobs/{jobId}/cancel` → cancel job
 - `GET /v1/artifacts/{artifactId}/download` → ZIP download
 
+## Deployment (Railway)
+
+### Prerequisites
+- GitHub account
+- Railway account (sign up at [railway.app](https://railway.app))
+- OpenAI API key
+
+### Deploy to Railway
+
+1. **Push your code to GitHub** (if not already done)
+
+2. **Create a new project on Railway**
+   - Go to [railway.app/new](https://railway.app/new)
+   - Click "Deploy from GitHub repo"
+   - Select your repository
+   - Select the `backend` directory as the root path
+
+3. **Set environment variables** in Railway dashboard:
+   ```
+   OPENAI_API_KEY=your-openai-key-here
+   PUBLIC_BASE_URL=https://your-app.railway.app
+   ```
+
+4. **Deploy**
+   - Railway will automatically detect the Dockerfile and deploy
+   - Your public endpoint will be: `https://your-app.railway.app`
+
+### Alternative: Deploy with Railway CLI
+
+```bash
+# Install Railway CLI
+npm install -g @railway/cli
+
+# Login
+railway login
+
+# Initialize and deploy
+cd backend
+railway init
+railway up
+
+# Add environment variables
+railway variables set OPENAI_API_KEY=your-key-here
+railway variables set PUBLIC_BASE_URL=$(railway domain)
+
+# Open your deployed app
+railway open
+```
+
 ## Notes
 
 - The generated ZIP contains a `blueprint.json` with a short app specification derived from the prompt + images.
 - A simple `index.html`, `styles.css`, and `app.js` are included for WebView preview.
 - This backend stores all data on disk under `backend/data/` (uploads, artifacts, and job state).
 - The artifact `downloadUrl` is a simple backend route, not a signed external URL (can be swapped later).
+- **Important**: Set `PUBLIC_BASE_URL` to your actual deployment URL for download links to work correctly.

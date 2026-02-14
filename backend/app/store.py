@@ -60,7 +60,9 @@ class DataStore:
     def _new_id(self, prefix: str) -> str:
         return f"{prefix}_{secrets.token_hex(8)}"
 
-    def create_upload(self, *, content: bytes, filename: str, mime_type: str) -> Dict[str, Any]:
+    def create_upload(
+        self, *, content: bytes, filename: str, mime_type: str
+    ) -> Dict[str, Any]:
         upload_id = self._new_id("upl")
         suffix = Path(filename).suffix or ""
         path = config.UPLOADS_DIR / f"{upload_id}{suffix}"
@@ -137,14 +139,19 @@ class DataStore:
             job["updatedAt"] = _iso(_now())
             self._save()
 
-    def set_progress(self, job_id: str, stage: str, percent: int, message: str | None = None) -> None:
-        self.update_job(job_id, {
-            "progress": {
-                "stage": stage,
-                "percent": percent,
-                "message": message,
-            }
-        })
+    def set_progress(
+        self, job_id: str, stage: str, percent: int, message: str | None = None
+    ) -> None:
+        self.update_job(
+            job_id,
+            {
+                "progress": {
+                    "stage": stage,
+                    "percent": percent,
+                    "message": message,
+                }
+            },
+        )
 
     def request_cancel(self, job_id: str) -> Optional[Dict[str, Any]]:
         with self._lock:
@@ -156,7 +163,9 @@ class DataStore:
             self._save()
             return job
 
-    def create_artifact(self, *, artifact_type: str, path: Path, ttl_hours: int = 1) -> Dict[str, Any]:
+    def create_artifact(
+        self, *, artifact_type: str, path: Path, ttl_hours: int = 1
+    ) -> Dict[str, Any]:
         artifact_id = self._new_id("art")
         now = _now()
         record = {
@@ -174,7 +183,14 @@ class DataStore:
     def get_artifact(self, artifact_id: str) -> Optional[Dict[str, Any]]:
         return self._state["artifacts"].get(artifact_id)
 
-    def create_version(self, *, app_id: str, job_id: str, manifest: Dict[str, Any], artifacts: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def create_version(
+        self,
+        *,
+        app_id: str,
+        job_id: str,
+        manifest: Dict[str, Any],
+        artifacts: List[Dict[str, Any]],
+    ) -> Dict[str, Any]:
         version_id = self._new_id("ver")
         record = {
             "versionId": version_id,
@@ -200,7 +216,11 @@ class DataStore:
         app = self._state["apps"].get(app_id)
         if not app:
             return []
-        return [self._state["versions"][vid] for vid in app["versionIds"] if vid in self._state["versions"]]
+        return [
+            self._state["versions"][vid]
+            for vid in app["versionIds"]
+            if vid in self._state["versions"]
+        ]
 
     @staticmethod
     def parse_iso(value: str) -> datetime:
