@@ -37,14 +37,24 @@ app.add_middleware(
 )
 
 
+@app.get("/")
+async def health_check() -> Dict[str, str]:
+    """Health check endpoint for deployment platforms."""
+    return {"status": "healthy", "service": "pluto-backend"}
+
+
 def _iso_to_dt(value: str) -> datetime:
     return store.parse_iso(value)
 
 
-def _raise_http(status: int, code: str, message: str, details: Dict[str, Any] | None = None) -> None:
+def _raise_http(
+    status: int, code: str, message: str, details: Dict[str, Any] | None = None
+) -> None:
     raise HTTPException(
         status_code=status,
-        detail=ApiError(code=code, message=message, details=details).model_dump(by_alias=True),
+        detail=ApiError(code=code, message=message, details=details).model_dump(
+            by_alias=True
+        ),
     )
 
 
@@ -82,10 +92,16 @@ async def upload_file(file: UploadFile = File(...)) -> UploadResponse:
     if len(content) > config.MAX_IMAGE_BYTES:
         _raise_http(400, "IMAGE_TOO_LARGE", "Image exceeds size limit")
 
-    mime_type = file.content_type or mimetypes.guess_type(file.filename or "")[0] or "application/octet-stream"
+    mime_type = (
+        file.content_type
+        or mimetypes.guess_type(file.filename or "")[0]
+        or "application/octet-stream"
+    )
     if not mime_type.startswith("image/"):
         _raise_http(400, "UNSUPPORTED_MEDIA_TYPE", "Only image uploads are supported")
-    record = store.create_upload(content=content, filename=file.filename or "upload", mime_type=mime_type)
+    record = store.create_upload(
+        content=content, filename=file.filename or "upload", mime_type=mime_type
+    )
     return UploadResponse(
         upload_id=record["uploadId"],
         mime_type=record["mimeType"],
@@ -94,19 +110,25 @@ async def upload_file(file: UploadFile = File(...)) -> UploadResponse:
 
 
 @app.post("/v1/generation-jobs", response_model=CreateJobResponse)
-async def create_generation_job(request: CreateJobRequest, background_tasks: BackgroundTasks) -> CreateJobResponse:
+async def create_generation_job(
+    request: CreateJobRequest, background_tasks: BackgroundTasks
+) -> CreateJobResponse:
     if len(request.prompt) > config.MAX_PROMPT_CHARS:
         _raise_http(400, "PROMPT_TOO_LONG", "Prompt exceeds maximum length")
 
     if len(request.input_images) > config.MAX_IMAGES:
-        _raise_http(400, "TOO_MANY_IMAGES", "Too many images", {"max": config.MAX_IMAGES})
+        _raise_http(
+            400, "TOO_MANY_IMAGES", "Too many images", {"max": config.MAX_IMAGES}
+        )
 
     for upload_id in request.input_images:
         if not store.get_upload(upload_id):
             _raise_http(400, "UNKNOWN_UPLOAD", f"Upload not found: {upload_id}")
 
     app_record = store.create_app()
-    job_record = store.create_job(app_id=app_record["appId"], request=request.model_dump(by_alias=True))
+    job_record = store.create_job(
+        app_id=app_record["appId"], request=request.model_dump(by_alias=True)
+    )
 
     background_tasks.add_task(run_generation_job, store, job_record["jobId"])
 
@@ -128,7 +150,10 @@ async def get_generation_job(job_id: str) -> JobStatusResponse:
     if job.get("progress"):
         progress = JobProgress(**job["progress"])
 
-    logs = [JobLog(ts=_iso_to_dt(entry["ts"]), level=entry["level"], msg=entry["msg"]) for entry in job.get("logs", [])]
+    logs = [
+        JobLog(ts=_iso_to_dt(entry["ts"]), level=entry["level"], msg=entry["msg"])
+        for entry in job.get("logs", [])
+    ]
 
     error = None
     if job.get("error"):
@@ -225,13 +250,19 @@ async def cancel_job(job_id: str) -> CancelJobResponse:
         _raise_http(404, "JOB_NOT_FOUND", "Generation job not found")
 
     if job["status"] in {"SUCCEEDED", "FAILED", "CANCELLED"}:
-        return CancelJobResponse(job_id=job_id, status=job["status"], updated_at=_iso_to_dt(job["updatedAt"]))
+        return CancelJobResponse(
+            job_id=job_id, status=job["status"], updated_at=_iso_to_dt(job["updatedAt"])
+        )
 
     store.request_cancel(job_id)
     store.update_job(job_id, {"status": "CANCELLED"})
 
     updated = store.get_job(job_id)
-    return CancelJobResponse(job_id=job_id, status=updated["status"], updated_at=_iso_to_dt(updated["updatedAt"]))
+    return CancelJobResponse(
+        job_id=job_id,
+        status=updated["status"],
+        updated_at=_iso_to_dt(updated["updatedAt"]),
+    )
 
 
 @app.get("/v1/artifacts/{artifact_id}/download")
