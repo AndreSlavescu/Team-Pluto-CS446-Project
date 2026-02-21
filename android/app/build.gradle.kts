@@ -7,7 +7,6 @@ plugins {
 android {
     namespace = "com.pluto.app"
     compileSdk = 35
-
     defaultConfig {
         applicationId = "com.pluto.app"
         minSdk = 26
@@ -15,13 +14,13 @@ android {
         versionCode = 1
         versionName = "0.1.0"
 
-        buildConfigField("String", "API_BASE_URL", "\"https://team-pluto-cs446-project-production.up.railway.app/\"")
+        buildConfigField("String", "API_BASE_URL", "\"http://127.0.0.1:8000\"")
     }
 
     buildTypes {
         debug {
             // Override with emulator localhost for local dev
-            buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:8000/\"")
+            buildConfigField("String", "API_BASE_URL", "\"http://127.0.0.1:8000\"")
         }
         release {
             isMinifyEnabled = false

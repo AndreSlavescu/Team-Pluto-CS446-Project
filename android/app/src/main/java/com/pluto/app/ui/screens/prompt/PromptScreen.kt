@@ -42,7 +42,10 @@ fun PromptScreen(
 
     LaunchedEffect(jobResult) {
         jobResult?.let {
-            onJobCreated(it.jobId, it.appId)
+            onJobCreated(
+                it.jobId,
+                it.appId
+            )
             viewModel.resetResult()
         }
     }
@@ -61,13 +64,9 @@ fun PromptScreen(
                     containerColor = MaterialTheme.colorScheme.background
                 )
             )
-        }
-    ) { padding ->
+        }) { padding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 24.dp),
+            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(48.dp))
@@ -92,9 +91,7 @@ fun PromptScreen(
             OutlinedTextField(
                 value = prompt,
                 onValueChange = viewModel::updatePrompt,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(140.dp),
+                modifier = Modifier.fillMaxWidth().height(140.dp),
                 placeholder = { Text("A todo app with categories and due dates...") },
                 shape = RoundedCornerShape(16.dp),
                 enabled = !isLoading,
@@ -111,7 +108,7 @@ fun PromptScreen(
                 text = "${prompt.length}/280",
                 style = MaterialTheme.typography.bodySmall,
                 color = if (isPromptTooLong) MaterialTheme.colorScheme.error
-                       else MaterialTheme.colorScheme.onSurfaceVariant,
+                else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.align(Alignment.End)
             )
 
@@ -138,9 +135,7 @@ fun PromptScreen(
 
             Button(
                 onClick = viewModel::submitPrompt,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
+                modifier = Modifier.fillMaxWidth().height(56.dp),
                 enabled = prompt.isNotBlank() && !isLoading && !isPromptTooLong,
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(

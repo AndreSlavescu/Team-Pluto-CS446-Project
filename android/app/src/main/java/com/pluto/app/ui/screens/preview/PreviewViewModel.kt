@@ -16,20 +16,14 @@ import java.io.FileOutputStream
 import java.util.zip.ZipInputStream
 
 class PreviewViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
-
     private val repository = AppRepository()
-
     val appId: String = savedStateHandle["appId"] ?: ""
-
     private val _previewPath = MutableStateFlow<String?>(null)
     val previewPath: StateFlow<String?> = _previewPath.asStateFlow()
-
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
-
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
-
     private val _appName = MutableStateFlow("Preview")
     val appName: StateFlow<String> = _appName.asStateFlow()
 
@@ -41,14 +35,16 @@ class PreviewViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
                 val version = repository.getLatestVersion(appId)
                 _appName.value = version.manifest.displayName
 
-                val artifact = version.artifacts.firstOrNull()
-                    ?: throw Exception("No artifacts found")
+                val artifact = version.artifacts.firstOrNull() ?: throw Exception("No artifacts found")
 
                 val artifactId = extractArtifactId(artifact.downloadUrl)
 
                 val responseBody = repository.downloadArtifact(artifactId)
 
-                val previewDir = File(context.cacheDir, "previews/$appId")
+                val previewDir = File(
+                    context.cacheDir,
+                    "previews/$appId"
+                )
                 withContext(Dispatchers.IO) {
                     if (previewDir.exists()) previewDir.deleteRecursively()
                     previewDir.mkdirs()
@@ -57,9 +53,11 @@ class PreviewViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
                     ZipInputStream(zipBytes.inputStream()).use { zip ->
                         var entry = zip.nextEntry
                         while (entry != null) {
-                            if (!entry.isDirectory) {
-                                // Prevent Zip Slip vulnerability - validate the entry path
-                                val file = File(previewDir, entry.name)
+                            if (!entry.isDirectory) { // Prevent Zip Slip vulnerability - validate the entry path
+                                val file = File(
+                                    previewDir,
+                                    entry.name
+                                )
                                 val canonicalFile = file.canonicalFile
                                 val canonicalPreviewDir = previewDir.canonicalFile
 
@@ -77,7 +75,10 @@ class PreviewViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
                     }
                 }
 
-                val indexFile = File(previewDir, "index.html")
+                val indexFile = File(
+                    previewDir,
+                    "index.html"
+                )
                 if (indexFile.exists()) {
                     _previewPath.value = indexFile.absolutePath
                 } else {

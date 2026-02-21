@@ -42,9 +42,7 @@ fun PreviewScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val appName by viewModel.appName.collectAsState()
-
     val context = LocalContext.current.applicationContext
-
     LaunchedEffect(Unit) {
         viewModel.loadPreview(context)
     }
@@ -53,24 +51,21 @@ fun PreviewScreen(
         topBar = {
             TopAppBar(
                 title = { Text(appName) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
+                      navigationIcon = {
+                          IconButton(onClick = onBack) {
+                              Icon(
+                                  Icons.AutoMirrored.Filled.ArrowBack,
+                                  contentDescription = "Back"
+                              )
+                          }
+                      },
+                      colors = TopAppBarDefaults.topAppBarColors(
+                          containerColor = MaterialTheme.colorScheme.background
+                      )
             )
-        }
-    ) { padding ->
+        }) { padding ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
+            modifier = Modifier.fillMaxSize().padding(padding)
         ) {
             when {
                 isLoading -> {
@@ -107,8 +102,7 @@ fun PreviewScreen(
                                 )
                                 webViewClient = WebViewClient()
                                 settings.javaScriptEnabled = true
-                                settings.domStorageEnabled = true
-                                // Security: Restrict file access from file URLs
+                                settings.domStorageEnabled = true // Security: Restrict file access from file URLs
                                 settings.allowFileAccess = true
                                 settings.allowFileAccessFromFileURLs = false
                                 settings.allowUniversalAccessFromFileURLs = false

@@ -14,22 +14,22 @@ import com.pluto.app.ui.screens.prompt.PromptScreen
 fun PlutoNavGraph() {
     val navController = rememberNavController()
 
-    NavHost(navController = navController, startDestination = "prompt") {
-
+    NavHost(
+        navController = navController,
+        startDestination = "apps"
+    ) {
         composable("prompt") {
             PromptScreen(
                 onJobCreated = { jobId, appId ->
                     navController.navigate("generation/$jobId/$appId")
-                }
-            )
+                })
         }
 
         composable(
             route = "generation/{jobId}/{appId}",
             arguments = listOf(
                 navArgument("jobId") { type = NavType.StringType },
-                navArgument("appId") { type = NavType.StringType }
-            )
+                navArgument("appId") { type = NavType.StringType })
         ) {
             GenerationScreen(
                 onComplete = { appId ->
@@ -38,22 +38,34 @@ fun PlutoNavGraph() {
                     }
                 },
                 onError = {
-                    navController.popBackStack("prompt", inclusive = false)
-                }
-            )
+                    navController.popBackStack(
+                        "prompt",
+                        inclusive = false
+                    )
+                })
         }
 
         composable(
             route = "preview/{appId}",
-            arguments = listOf(
-                navArgument("appId") { type = NavType.StringType }
-            )
+            arguments = listOf(navArgument("appId") { type = NavType.StringType })
         ) {
             PreviewScreen(
                 onBack = {
-                    navController.popBackStack("prompt", inclusive = false)
-                }
-            )
+                    navController.popBackStack(
+                        "prompt",
+                        inclusive = false
+                    )
+                })
+        }
+
+        composable(route = "apps") {
+            PreviewScreen(
+                onBack = {
+                    navController.popBackStack(
+                        "prompt",
+                        inclusive = false
+                    )
+                })
         }
     }
 }

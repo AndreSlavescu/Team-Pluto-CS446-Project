@@ -1,5 +1,6 @@
 package com.pluto.app.ui.screens.generation
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,10 +27,14 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.pluto.app.data.model.JobProgress
+import com.pluto.app.data.model.JobStatusResponse
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GenerationScreen(
     onComplete: (appId: String) -> Unit,
@@ -46,6 +51,20 @@ fun GenerationScreen(
         }
     }
 
+    GenerationScreenContent(
+        status = status,
+        error = error,
+        onBackClick = onError
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun GenerationScreenContent(
+    status: JobStatusResponse?,
+    error: String?,
+    onBackClick: () -> Unit
+) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -54,8 +73,7 @@ fun GenerationScreen(
                     containerColor = MaterialTheme.colorScheme.background
                 )
             )
-        }
-    ) { padding ->
+        }) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -67,14 +85,28 @@ fun GenerationScreen(
 
             val progress = status?.progress
             val percent = progress?.percent ?: 0
-
-            CircularProgressIndicator(
-                progress = { percent / 100f },
-                modifier = Modifier.size(120.dp),
-                strokeWidth = 8.dp,
-                color = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.surfaceVariant
+            
+            val animatedProgress by animateFloatAsState(
+                targetValue = percent / 100f,
+                label = "progress"
             )
+
+            if (progress == null && error == null) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(120.dp),
+                    strokeWidth = 8.dp,
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            } else {
+                CircularProgressIndicator(
+                    progress = { animatedProgress },
+                    modifier = Modifier.size(120.dp),
+                    strokeWidth = 8.dp,
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -119,7 +151,7 @@ fun GenerationScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                OutlinedButton(onClick = onError) {
+                OutlinedButton(onClick = onBackClick) {
                     Text("Go Back")
                 }
             }
@@ -148,5 +180,41 @@ fun GenerationScreen(
                 }
             }
         }
+    }
+}
+
+class GenerationStateProvider : PreviewParameterProvider<JobStatusResponse?> {
+    override val values = sequenceOf(
+        null,
+        JobStatusResponse(
+            jobId = "1",
+            appId = "1",
+            status = "IN_PROGRESS",
+            createdAt = "",
+            updatedAt = "",
+            progress = JobProgress(stage = "Starting", percent = 20, message = "Initializing...")
+        ),
+        JobStatusResponse(
+            jobId = "1",
+            appId = "1",
+            status = "IN_PROGRESS",
+            createdAt = "",
+            updatedAt = "",
+            progress = JobProgress(stage = "Building", percent = 65, message = "Compiling assets...")
+        )
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun GenerationScreenPreview(
+    @PreviewParameter(GenerationStateProvider::class) status: JobStatusResponse?
+) {
+    MaterialTheme {
+        GenerationScreenContent(
+            status = status,
+            error = if (status?.status == "FAILED") "Mock Error" else null,
+            onBackClick = {}
+        )
     }
 }

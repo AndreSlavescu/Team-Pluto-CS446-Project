@@ -1,4 +1,4 @@
-package com.pluto.app.ui.screens.prompt
+package com.pluto.app.ui.screens.myapps
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class PromptViewModel : ViewModel() {
+class AppsViewModel : ViewModel() {
 
     private val repository = AppRepository()
 
