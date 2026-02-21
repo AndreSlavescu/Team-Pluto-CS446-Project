@@ -28,5 +28,6 @@ object ApiClient {
         .addConverterFactory(GsonConverterFactory.create())
         .build()
 
-    val service: PlutoApiService = retrofit.create(PlutoApiService::class.java)
+    @Suppress("KotlinConstantConditions")
+    val service: PlutoApiService = if (BuildConfig.USE_MOCK_API) FakePlutoApiService() else retrofit.create(PlutoApiService::class.java)
 }

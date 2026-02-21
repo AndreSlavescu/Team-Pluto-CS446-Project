@@ -39,7 +39,6 @@ class PromptViewModel : ViewModel() {
             try {
                 val result = repository.createJob(currentPrompt)
                 _jobResult.value = result
-                //_jobResult.value = CreateJobResponse("","","DONE","")
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to create generation job"
             } finally {

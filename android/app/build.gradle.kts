@@ -15,15 +15,24 @@ android {
         versionName = "0.1.0"
 
         buildConfigField("String", "API_BASE_URL", "\"http://127.0.0.1:8000\"")
+        buildConfigField("boolean", "USE_MOCK_API", "false")
+        buildConfigField("boolean", "USE_DEFAULT_APPS", "false")
     }
 
     buildTypes {
         debug {
             // Override with emulator localhost for local dev
             buildConfigField("String", "API_BASE_URL", "\"http://127.0.0.1:8000\"")
+            // using a mocked api that returns a pregenerated html app
+            buildConfigField("boolean", "USE_MOCK_API", "false")
+            // using dummy apps
+            buildConfigField("boolean", "USE_DEFAULT_APPS", "false")
         }
         release {
             isMinifyEnabled = false
+            buildConfigField("boolean", "USE_MOCK_API", "false")
+            buildConfigField("boolean", "USE_DEFAULT_APPS", "false")
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 

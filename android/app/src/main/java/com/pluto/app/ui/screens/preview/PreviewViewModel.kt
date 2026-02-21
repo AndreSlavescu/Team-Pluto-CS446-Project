@@ -42,8 +42,8 @@ class PreviewViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
                 val responseBody = repository.downloadArtifact(artifactId)
 
                 val previewDir = File(
-                    context.cacheDir,
-                    "previews/$appId"
+                    context.filesDir,
+                    "saved_apps/$appId"
                 )
                 withContext(Dispatchers.IO) {
                     if (previewDir.exists()) previewDir.deleteRecursively()

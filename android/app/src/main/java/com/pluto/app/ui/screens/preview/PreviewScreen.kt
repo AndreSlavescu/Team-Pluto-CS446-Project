@@ -11,14 +11,17 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -31,11 +34,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.pluto.app.ui.screens.myapps.AppsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PreviewScreen(
     onBack: () -> Unit,
+    onOpenApps: () -> Unit,
     viewModel: PreviewViewModel = viewModel()
 ) {
     val previewPath by viewModel.previewPath.collectAsState()
@@ -51,17 +56,31 @@ fun PreviewScreen(
         topBar = {
             TopAppBar(
                 title = { Text(appName) },
-                      navigationIcon = {
-                          IconButton(onClick = onBack) {
-                              Icon(
-                                  Icons.AutoMirrored.Filled.ArrowBack,
-                                  contentDescription = "Back"
-                              )
-                          }
-                      },
-                      colors = TopAppBarDefaults.topAppBarColors(
-                          containerColor = MaterialTheme.colorScheme.background
-                      )
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(
+                        onClick = onOpenApps,
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Home,
+                            contentDescription = "My Apps"
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
             )
         }) { padding ->
         Box(
