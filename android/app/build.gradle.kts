@@ -30,6 +30,7 @@ android {
         }
         release {
             isMinifyEnabled = false
+            buildConfigField("String", "API_BASE_URL", "\"https://team-pluto-cs446-project-production.up.railway.app\"")
             buildConfigField("boolean", "USE_MOCK_API", "false")
             buildConfigField("boolean", "USE_DEFAULT_APPS", "false")
             signingConfig = signingConfigs.getByName("debug")
