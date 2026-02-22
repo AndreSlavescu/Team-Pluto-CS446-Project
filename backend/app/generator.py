@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 from zipfile import ZipFile
 
-from openai import OpenAI
+from openai import OpenAI, OpenAIError
 
 from . import config
 from .store import DataStore
@@ -320,17 +320,20 @@ def run_generation_job(store: DataStore, job_id: str) -> None:
         raw_output = response.output_text
         blueprint = _parse_json(raw_output or "")
     except Exception as exc:  # pragma: no cover - defensive logging
+        error_code = (
+            "OPENAI_ERROR" if isinstance(exc, OpenAIError) else "GENERATION_ERROR"
+        )
         store.update_job(
             job_id,
             {
                 "status": "FAILED",
                 "error": {
-                    "code": "OPENAI_ERROR",
+                    "code": error_code,
                     "message": str(exc),
                 },
             },
         )
-        store.add_log(job_id, "ERROR", f"OpenAI call failed: {exc}")
+        store.add_log(job_id, "ERROR", f"Generation failed: {exc}")
         return
 
     if time.monotonic() - started_at > max_seconds:

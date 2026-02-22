@@ -39,7 +39,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 fun PromptScreen(
     onJobCreated: (jobId: String, appId: String) -> Unit,
     onOpenApps: () -> Unit,
-    viewModel: PromptViewModel = viewModel()
+    viewModel: PromptViewModel = viewModel(),
 ) {
     val prompt by viewModel.prompt.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -50,7 +50,7 @@ fun PromptScreen(
         jobResult?.let {
             onJobCreated(
                 it.jobId,
-                it.appId
+                it.appId,
             )
             viewModel.resetResult()
         }
@@ -63,38 +63,41 @@ fun PromptScreen(
                     Text(
                         "Pluto",
                         style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
                     )
                 },
                 actions = {
                     IconButton(
                         onClick = onOpenApps,
-                        colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        colors =
+                            IconButtonDefaults.iconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            ),
                     ) {
                         Icon(
                             imageVector = Icons.Default.Home,
-                            contentDescription = "My Apps"
+                            contentDescription = "My Apps",
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                    ),
             )
-        }) { padding ->
+        },
+    ) { padding ->
         Column(
             modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Spacer(modifier = Modifier.height(48.dp))
 
             Text(
                 text = "Describe your app",
                 style = MaterialTheme.typography.headlineLarge,
-                color = MaterialTheme.colorScheme.onBackground
+                color = MaterialTheme.colorScheme.onBackground,
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -103,7 +106,7 @@ fun PromptScreen(
                 text = "Tell us what you want to build in one sentence",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -115,10 +118,11 @@ fun PromptScreen(
                 placeholder = { Text("A todo app with categories and due dates...") },
                 shape = RoundedCornerShape(16.dp),
                 enabled = !isLoading,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant
-                )
+                colors =
+                    OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant,
+                    ),
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -127,9 +131,13 @@ fun PromptScreen(
             Text(
                 text = "${prompt.length}/280",
                 style = MaterialTheme.typography.bodySmall,
-                color = if (isPromptTooLong) MaterialTheme.colorScheme.error
-                else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.align(Alignment.End)
+                color =
+                    if (isPromptTooLong) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                modifier = Modifier.align(Alignment.End),
             )
 
             if (isPromptTooLong) {
@@ -138,7 +146,7 @@ fun PromptScreen(
                     text = "Prompt is too long (max 280 characters)",
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.align(Alignment.End)
+                    modifier = Modifier.align(Alignment.End),
                 )
             }
 
@@ -147,7 +155,7 @@ fun PromptScreen(
                 Text(
                     text = it,
                     color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.bodyMedium,
                 )
             }
             Spacer(modifier = Modifier.height(16.dp))
@@ -157,21 +165,22 @@ fun PromptScreen(
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 enabled = prompt.isNotBlank() && !isLoading && !isPromptTooLong,
                 shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                )
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                    ),
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
                         color = MaterialTheme.colorScheme.onPrimary,
-                        strokeWidth = 2.dp
+                        strokeWidth = 2.dp,
                     )
                 } else {
                     Text(
                         text = "Generate App",
                         style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onPrimary
+                        color = MaterialTheme.colorScheme.onPrimary,
                     )
                 }
             }

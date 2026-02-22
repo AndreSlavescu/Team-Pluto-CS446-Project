@@ -16,7 +16,7 @@ jobs:
       - name: Detect Gradle
         id: gradle
         run: |
-          if [ -f gradlew ] || [ -f gradle/wrapper/gradle-wrapper.properties ]; then
+          if [ -f android/gradlew ] || [ -f android/gradle/wrapper/gradle-wrapper.properties ]; then
             echo "has_gradle=true" >> "$GITHUB_OUTPUT"
           else
             echo "has_gradle=false" >> "$GITHUB_OUTPUT"

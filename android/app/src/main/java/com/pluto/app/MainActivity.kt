@@ -19,7 +19,7 @@ class MainActivity : ComponentActivity() {
             PlutoTheme {
                 PlutoNavGraph(
                     initialOpenAppId = initialOpenAppId,
-                    forceOpenApps = forceOpenApps
+                    forceOpenApps = forceOpenApps,
                 )
             }
         }
