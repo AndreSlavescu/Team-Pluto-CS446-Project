@@ -86,7 +86,7 @@ fun PreviewScreen(
         },
     ) { padding ->
         Box(
-            modifier = Modifier.fillMaxSize().padding(padding).navigationBarsPadding()
+            modifier = Modifier.fillMaxSize().padding(padding).navigationBarsPadding(),
         ) {
             when {
                 isLoading -> {

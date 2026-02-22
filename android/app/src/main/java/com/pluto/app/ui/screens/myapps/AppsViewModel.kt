@@ -35,15 +35,17 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val persisted = readPersistedApps()
             val scanned = scanSavedAppPaths()
-            val mergedApps = mergeSavedApps(
-                persisted = persisted,
-                scanned = scanned
-            )
-            val apps = if (!BuildConfig.USE_DEFAULT_APPS) {
-                enrichAppNames(mergedApps)
-            } else {
-                defaultApps()
-            }
+            val mergedApps =
+                mergeSavedApps(
+                    persisted = persisted,
+                    scanned = scanned,
+                )
+            val apps =
+                if (!BuildConfig.USE_DEFAULT_APPS) {
+                    enrichAppNames(mergedApps)
+                } else {
+                    defaultApps()
+                }
             _savedApps.value = apps.sortedByDescending { it.updatedAtMillis }
             _selectedIds.value = _selectedIds.value.intersect(_savedApps.value.map { it.id }.toSet())
             persistApps(_savedApps.value)
@@ -203,7 +205,7 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
                         putExtra(MainActivity.EXTRA_OPEN_APP_ID, extractPreviewAppId(app))
                     }
 
-                ShortcutInfo.Builder(context, "pluto-generated-${app.id}")
+                ShortcutInfo.Builder(context, generatedShortcutId(app.id))
                     .setShortLabel(app.name.take(24))
                     .setLongLabel("Open ${app.name}")
                     .setIcon(Icon.createWithResource(context, android.R.drawable.sym_def_app_icon))
@@ -211,16 +213,9 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
                     .build()
             }
 
-            ShortcutInfo.Builder(context, generatedShortcutId(app.id))
-                .setShortLabel(app.name.take(24))
-                .setLongLabel("Open ${app.name}")
-                .setIcon(Icon.createWithResource(context, android.R.drawable.sym_def_app_icon))
-                .setIntent(targetIntent)
-                .build()
-        }
-
-        val existingNonGenerated = shortcutManager.dynamicShortcuts
-            .filterNot { it.id.startsWith(GENERATED_SHORTCUT_PREFIX) }
+        val existingNonGenerated =
+            shortcutManager.dynamicShortcuts
+                .filterNot { it.id.startsWith(GENERATED_SHORTCUT_PREFIX) }
 
         shortcutManager.dynamicShortcuts =
             (existingNonGenerated + launchShortcuts)
@@ -237,7 +232,7 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
         runCatching {
             shortcutManager.disableShortcuts(
                 shortcutIdsToRemove,
-                "This app was deleted"
+                "This app was deleted",
             )
         }
     }
@@ -303,9 +298,10 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
             if (!shouldResolveName || previewId.isBlank()) {
                 app
             } else {
-                val resolvedName = runCatching {
-                    repository.getLatestVersion(previewId).manifest.displayName
-                }.getOrNull()
+                val resolvedName =
+                    runCatching {
+                        repository.getLatestVersion(previewId).manifest.displayName
+                    }.getOrNull()
 
                 if (resolvedName.isNullOrBlank()) app else app.copy(name = resolvedName)
             }

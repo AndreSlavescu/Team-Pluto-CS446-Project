@@ -127,12 +127,13 @@ fun AppsScreen(
         },
         bottomBar = {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.background)
-                    .padding(horizontal = 16.dp, vertical = 14.dp)
-                    .navigationBarsPadding(),
-                verticalAlignment = Alignment.CenterVertically
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.background)
+                        .padding(horizontal = 16.dp, vertical = 14.dp)
+                        .navigationBarsPadding(),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = "${selectedIds.size} Selected",

@@ -2,7 +2,6 @@ package com.pluto.app.ui.screens.generation
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -84,19 +83,21 @@ fun GenerationScreenContent(
         },
     ) { padding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 24.dp)
-                .navigationBarsPadding(),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(horizontal = 24.dp)
+                    .navigationBarsPadding(),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Spacer(modifier = Modifier.height(48.dp))
 
             val progress = status?.progress
             val percent = progress?.percent ?: 0
             val statusLabel = status?.status.orEmpty()
-            val isCompleted = statusLabel.equals("COMPLETED", ignoreCase = true) ||
+            val isCompleted =
+                statusLabel.equals("COMPLETED", ignoreCase = true) ||
                     statusLabel.equals("SUCCEEDED", ignoreCase = true)
             val progressAnim = remember { Animatable(0f) }
             val currentPercent by rememberUpdatedState(percent)
@@ -110,10 +111,11 @@ fun GenerationScreenContent(
                         if (progressAnim.value < 1f) {
                             progressAnim.animateTo(
                                 targetValue = 1f,
-                                animationSpec = tween(
-                                    durationMillis = 450,
-                                    easing = LinearEasing
-                                )
+                                animationSpec =
+                                    tween(
+                                        durationMillis = 450,
+                                        easing = LinearEasing,
+                                    ),
                             )
                         }
                         break
@@ -129,10 +131,11 @@ fun GenerationScreenContent(
                         val deltaPercent = ((target - progressAnim.value) * 100).toInt().coerceAtLeast(1)
                         progressAnim.animateTo(
                             targetValue = target,
-                            animationSpec = tween(
-                                durationMillis = (deltaPercent * 45).coerceIn(220, 2100),
-                                easing = LinearEasing
-                            )
+                            animationSpec =
+                                tween(
+                                    durationMillis = (deltaPercent * 45).coerceIn(220, 2100),
+                                    easing = LinearEasing,
+                                ),
                         )
                     }
 
