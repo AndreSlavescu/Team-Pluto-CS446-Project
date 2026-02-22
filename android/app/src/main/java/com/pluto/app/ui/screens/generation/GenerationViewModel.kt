@@ -27,7 +27,7 @@ class GenerationViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
-    init {
+    init {;
         startPolling()
     }
 

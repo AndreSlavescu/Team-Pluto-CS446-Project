@@ -1,11 +1,15 @@
 package com.pluto.app.ui.screens.generation
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -25,6 +29,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -34,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.pluto.app.data.model.JobProgress
 import com.pluto.app.data.model.JobStatusResponse
+import kotlinx.coroutines.delay
 
 @Composable
 fun GenerationScreen(
@@ -78,18 +85,58 @@ fun GenerationScreenContent(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = 24.dp)
+                .navigationBarsPadding(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(48.dp))
 
             val progress = status?.progress
             val percent = progress?.percent ?: 0
-            
-            val animatedProgress by animateFloatAsState(
-                targetValue = percent / 100f,
-                label = "progress"
-            )
+            val statusLabel = status?.status.orEmpty()
+            val isCompleted = statusLabel.equals("COMPLETED", ignoreCase = true) ||
+                    statusLabel.equals("SUCCEEDED", ignoreCase = true)
+            val progressAnim = remember { Animatable(0f) }
+            val currentPercent by rememberUpdatedState(percent)
+            val currentIsCompleted by rememberUpdatedState(isCompleted)
+
+            LaunchedEffect(Unit) {
+                while (true) {
+                    val serverProgress = (currentPercent.coerceIn(0, 100)) / 100f
+
+                    if (currentIsCompleted) {
+                        if (progressAnim.value < 1f) {
+                            progressAnim.animateTo(
+                                targetValue = 1f,
+                                animationSpec = tween(
+                                    durationMillis = 450,
+                                    easing = LinearEasing
+                                )
+                            )
+                        }
+                        break
+                    }
+
+                    val capBeforeCompletion = 0.99f
+                    val floor = maxOf(progressAnim.value, serverProgress).coerceAtMost(capBeforeCompletion)
+                    val remaining = capBeforeCompletion - floor
+                    val easedStep = (remaining * 0.10f).coerceAtLeast(0.0025f)
+                    val target = maxOf(serverProgress, (floor + easedStep).coerceAtMost(capBeforeCompletion))
+
+                    if (target > progressAnim.value) {
+                        val deltaPercent = ((target - progressAnim.value) * 100).toInt().coerceAtLeast(1)
+                        progressAnim.animateTo(
+                            targetValue = target,
+                            animationSpec = tween(
+                                durationMillis = (deltaPercent * 45).coerceIn(220, 2100),
+                                easing = LinearEasing
+                            )
+                        )
+                    }
+
+                    delay(120)
+                }
+            }
 
             if (progress == null && error == null) {
                 CircularProgressIndicator(
@@ -100,7 +147,7 @@ fun GenerationScreenContent(
                 )
             } else {
                 CircularProgressIndicator(
-                    progress = { animatedProgress },
+                    progress = { progressAnim.value },
                     modifier = Modifier.size(120.dp),
                     strokeWidth = 8.dp,
                     color = MaterialTheme.colorScheme.primary,
@@ -111,7 +158,7 @@ fun GenerationScreenContent(
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "${percent}%",
+                text = "${(progressAnim.value * 100).toInt()}%",
                 style = MaterialTheme.typography.headlineLarge,
                 color = MaterialTheme.colorScheme.onBackground
             )

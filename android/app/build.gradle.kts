@@ -22,7 +22,7 @@ android {
     buildTypes {
         debug {
             // Override with emulator localhost for local dev
-            buildConfigField("String", "API_BASE_URL", "\"http://127.0.0.1:8000\"")
+            buildConfigField("String", "API_BASE_URL", "\"https://team-pluto-cs446-project-production.up.railway.app/\"")
             // using a mocked api that returns a pregenerated html app
             buildConfigField("boolean", "USE_MOCK_API", "false")
             // using dummy apps
@@ -53,6 +53,7 @@ android {
 }
 
 dependencies {
+    implementation("androidx.compose.foundation:foundation-layout:1.10.3")
     val composeBom = platform("androidx.compose:compose-bom:2024.09.03")
     implementation(composeBom)
 

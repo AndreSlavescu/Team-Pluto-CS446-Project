@@ -39,7 +39,11 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
                 persisted = persisted,
                 scanned = scanned
             )
-            val apps = if (!BuildConfig.USE_DEFAULT_APPS) mergedApps else defaultApps()
+            val apps = if (!BuildConfig.USE_DEFAULT_APPS) {
+                enrichAppNames(mergedApps)
+            } else {
+                defaultApps()
+            }
             _savedApps.value = apps.sortedByDescending { it.updatedAtMillis }
             _selectedIds.value = _selectedIds.value.intersect(_savedApps.value.map { it.id }.toSet())
             persistApps(_savedApps.value)
@@ -135,6 +139,7 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         }
+        removeLauncherShortcuts(selected)
 
         _savedApps.update { apps -> apps.filterNot { _selectedIds.value.contains(it.id) } }
         _selectedIds.value = emptySet()
@@ -177,7 +182,7 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
                 putExtra(MainActivity.EXTRA_OPEN_APP_ID, extractPreviewAppId(app))
             }
 
-            ShortcutInfo.Builder(context, "pluto-generated-${app.id}")
+            ShortcutInfo.Builder(context, generatedShortcutId(app.id))
                 .setShortLabel(app.name.take(24))
                 .setLongLabel("Open ${app.name}")
                 .setIcon(Icon.createWithResource(context, android.R.drawable.sym_def_app_icon))
@@ -186,12 +191,26 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         val existingNonGenerated = shortcutManager.dynamicShortcuts
-            .filterNot { it.id.startsWith("pluto-generated-") }
+            .filterNot { it.id.startsWith(GENERATED_SHORTCUT_PREFIX) }
 
         shortcutManager.dynamicShortcuts = (existingNonGenerated + launchShortcuts)
             .take(4)
     }
 
+    private fun removeLauncherShortcuts(apps: List<AppsModel>) {
+        if (apps.isEmpty()) return
+
+        val context = getApplication<Application>()
+        val shortcutManager = context.getSystemService(ShortcutManager::class.java) ?: return
+        val shortcutIdsToRemove = apps.map { generatedShortcutId(it.id) }
+        shortcutManager.removeDynamicShortcuts(shortcutIdsToRemove)
+        runCatching {
+            shortcutManager.disableShortcuts(
+                shortcutIdsToRemove,
+                "This app was deleted"
+            )
+        }
+    }
 
     private fun mergeSavedApps(
         persisted: List<AppsModel>,
@@ -242,6 +261,23 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
                 localPath = file.absolutePath,
                 updatedAtMillis = file.lastModified()
             )
+        }
+    }
+
+    private suspend fun enrichAppNames(apps: List<AppsModel>): List<AppsModel> {
+        return apps.map { app ->
+            val previewId = extractPreviewAppId(app)
+            val shouldResolveName = app.name == previewId || app.name == "Generated App"
+
+            if (!shouldResolveName || previewId.isBlank()) {
+                app
+            } else {
+                val resolvedName = runCatching {
+                    repository.getLatestVersion(previewId).manifest.displayName
+                }.getOrNull()
+
+                if (resolvedName.isNullOrBlank()) app else app.copy(name = resolvedName)
+            }
         }
     }
 
@@ -317,6 +353,9 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
         private const val PREFS_NAME = "my_apps_store"
         private const val KEY_SAVED_APPS = "saved_apps"
         private const val DEFAULT_SAVED_APPS_DIR = "saved_apps"
+        private const val GENERATED_SHORTCUT_PREFIX = "pluto-generated-"
+
+        private fun generatedShortcutId(appId: String): String = "$GENERATED_SHORTCUT_PREFIX$appId"
     }
 
 }
