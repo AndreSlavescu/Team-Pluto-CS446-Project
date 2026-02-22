@@ -40,8 +40,8 @@ lint-android:
 		echo "ERROR: Java is not installed. Install it with: brew install --cask temurin@17"; exit 1; \
 	else \
 		chmod +x android/gradlew && cd android && ./gradlew $(GRADLE_ARGS) ktlintCheck; \
-		if [ -n "$$ANDROID_HOME" ] || grep -q "sdk.dir" android/local.properties 2>/dev/null; then \
-			cd android && ./gradlew $(GRADLE_ARGS) lint; \
+		if [ -n "$$ANDROID_HOME" ] || grep -q "sdk.dir" local.properties 2>/dev/null; then \
+			./gradlew $(GRADLE_ARGS) lint; \
 		else \
 			echo "WARNING: Android lint skipped — Android SDK not found."; \
 			echo "         To run Android lint, install Android Studio: https://developer.android.com/studio"; \
