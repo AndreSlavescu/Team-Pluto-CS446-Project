@@ -18,9 +18,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code with correct ownership
 COPY --chown=appuser:appuser . .
 
-# Declare data volume for persistence
-VOLUME ["/app/data"]
-
 # Run as non-root
 USER appuser
 
