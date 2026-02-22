@@ -14,7 +14,7 @@ android {
         versionCode = 1
         versionName = "0.1.0"
 
-        buildConfigField("String", "API_BASE_URL", "\"http://127.0.0.1:8000\"")
+        buildConfigField("String", "API_BASE_URL", "\"https://team-pluto-cs446-project-production.up.railway.app/\"")
         buildConfigField("boolean", "USE_MOCK_API", "false")
         buildConfigField("boolean", "USE_DEFAULT_APPS", "false")
     }
