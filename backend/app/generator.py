@@ -29,6 +29,20 @@ Return ONLY valid JSON (no markdown) with this schema:
 Keep values short and practical.
 """.strip()
 
+APP_GEN_SYSTEM_PROMPT = """
+You are an expert mobile web developer. Generate a complete, self-contained single-file HTML app from the blueprint and original prompt below.
+
+Requirements:
+- Single HTML file with all CSS and JavaScript inlined — no external files, no CDN links
+- Mobile-first responsive layout optimised for 360-480 px width
+- Every feature in the blueprint must actually work — use localStorage for persistence where needed
+- All buttons and forms must do something — no placeholders, no "coming soon"
+- Clean modern dark UI: background #0e0f12, cards #1a1d24, accent #3bd6c6, text #f4f7ff
+- No lorem ipsum, no sample data that isn't meaningful
+
+Return ONLY the raw HTML starting with <!doctype html>. No markdown fences, no explanation.
+""".strip()
+
 
 def _slugify(value: str) -> str:
     slug = re.sub(r"[^a-zA-Z0-9]+", "", value).lower()
@@ -65,6 +79,37 @@ def _parse_json(text: str) -> Optional[Dict[str, Any]]:
     return None
 
 
+def _generate_html_app(
+    blueprint: Dict[str, Any],
+    prompt: str,
+    client: OpenAI,
+) -> Optional[str]:
+    blueprint_text = json.dumps(blueprint, indent=2)
+    try:
+        response = client.responses.create(
+            model=config.OPENAI_MODEL,
+            input=[
+                {
+                    "role": "system",
+                    "content": [{"type": "input_text", "text": APP_GEN_SYSTEM_PROMPT}],
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "input_text",
+                            "text": f"Original prompt: {prompt}\n\nBlueprint:\n{blueprint_text}",
+                        }
+                    ],
+                },
+            ],
+            max_output_tokens=65536,
+        )
+        return response.output_text
+    except Exception:
+        return None
+
+
 def _build_manifest(prompt: str, blueprint: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     display_name = None
     package_name = None
@@ -91,7 +136,10 @@ def _build_manifest(prompt: str, blueprint: Optional[Dict[str, Any]]) -> Dict[st
 
 
 def _create_project_bundle(
-    target_dir: Path, prompt: str, blueprint: Optional[Dict[str, Any]]
+    target_dir: Path,
+    prompt: str,
+    blueprint: Optional[Dict[str, Any]],
+    html_content: Optional[str] = None,
 ) -> None:
     target_dir.mkdir(parents=True, exist_ok=True)
     (target_dir / "README.md").write_text(
@@ -103,7 +151,10 @@ def _create_project_bundle(
     (target_dir / "prompt.txt").write_text(prompt)
     if blueprint:
         (target_dir / "blueprint.json").write_text(json.dumps(blueprint, indent=2))
-        _write_webview_bundle(target_dir, blueprint)
+        if html_content:
+            (target_dir / "index.html").write_text(html_content)
+        else:
+            _write_webview_bundle(target_dir, blueprint)
     else:
         (target_dir / "blueprint.txt").write_text(
             "Blueprint generation failed. See logs."
@@ -294,11 +345,12 @@ def run_generation_job(store: DataStore, job_id: str) -> None:
             }
         )
 
-    store.set_progress(job_id, "CALLING_LLM", 40, "Calling GPT-5.2 Codex")
+    store.set_progress(job_id, "CALLING_LLM", 30, "Planning app blueprint")
     store.add_log(job_id, "INFO", "Calling OpenAI model")
 
     blueprint: Optional[Dict[str, Any]] = None
     raw_output: Optional[str] = None
+    client: Optional[OpenAI] = None
     try:
         if not config.OPENAI_API_KEY:
             raise RuntimeError("OPENAI_API_KEY is not configured")
@@ -350,6 +402,30 @@ def run_generation_job(store: DataStore, job_id: str) -> None:
         store.add_log(job_id, "ERROR", "Generation timed out")
         return
 
+    html_content: Optional[str] = None
+    if blueprint and client:
+        store.set_progress(job_id, "GENERATING_APP", 60, "Generating app code")
+        store.add_log(job_id, "INFO", "Generating functional app")
+        html_content = _generate_html_app(blueprint, prompt, client)
+        if html_content:
+            store.add_log(job_id, "INFO", "App code generated successfully")
+        else:
+            store.add_log(job_id, "WARN", "App code generation failed, using spec view")
+
+    if time.monotonic() - started_at > max_seconds:
+        store.update_job(
+            job_id,
+            {
+                "status": "FAILED",
+                "error": {
+                    "code": "TIMEOUT",
+                    "message": "Generation exceeded time limit",
+                },
+            },
+        )
+        store.add_log(job_id, "ERROR", "Generation timed out")
+        return
+
     store.set_progress(job_id, "ASSEMBLING_ARTIFACT", 80, "Building project bundle")
     store.add_log(job_id, "INFO", "Assembling artifact")
 
@@ -366,7 +442,7 @@ def run_generation_job(store: DataStore, job_id: str) -> None:
     if blueprint is None and raw_output:
         (work_dir / "blueprint_raw.txt").write_text(raw_output)
 
-    _create_project_bundle(work_dir, prompt, blueprint)
+    _create_project_bundle(work_dir, prompt, blueprint, html_content)
 
     zip_path = config.ARTIFACTS_DIR / f"{job_id}_android_project.zip"
     _zip_directory(work_dir, zip_path)
