@@ -59,7 +59,7 @@ fun AppsScreen(
     onOpenApp: (appId: String) -> Unit,
     onExportApps: (List<AppsModel>) -> Unit = {},
     onCreateApps: () -> Unit = {},
-    viewModel: AppsViewModel = viewModel()
+    viewModel: AppsViewModel = viewModel(),
 ) {
     val apps by viewModel.savedApps.collectAsState()
     val selectedIds by viewModel.selectedIds.collectAsState()
@@ -74,7 +74,7 @@ fun AppsScreen(
             if (isNavigatingToPrompt) {
                 onCreateApps()
             }
-        }
+        },
     )
 
     LaunchedEffect(Unit) {
@@ -90,12 +90,12 @@ fun AppsScreen(
                         Text(
                             text = "My Apps",
                             style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.SemiBold,
                         )
                         Text(
                             text = "Select apps to manage",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 },
@@ -108,42 +108,46 @@ fun AppsScreen(
                             }
                         },
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            contentColor = MaterialTheme.colorScheme.onSurface
-                        ),
-                        modifier = Modifier.padding(end = 12.dp)
+                        colors =
+                            ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = MaterialTheme.colorScheme.onSurface,
+                            ),
+                        modifier = Modifier.padding(end = 12.dp),
                     ) {
                         Text("Prompt New App")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                    ),
             )
         },
         bottomBar = {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.background)
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.background)
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = "${selectedIds.size} Selected",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 )
                 Button(
                     onClick = { viewModel.deleteSelectedApps() },
                     enabled = selectedIds.isNotEmpty(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer,
-                        contentColor = MaterialTheme.colorScheme.error
-                    ),
-                    shape = RoundedCornerShape(12.dp)
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor = MaterialTheme.colorScheme.error,
+                        ),
+                    shape = RoundedCornerShape(12.dp),
                 ) {
                     Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.size(6.dp))
@@ -159,102 +163,121 @@ fun AppsScreen(
                             Toast.makeText(
                                 context,
                                 "Shortcuts created. Long-press Pluto app icon to view them.",
-                                Toast.LENGTH_LONG
+                                Toast.LENGTH_LONG,
                             ).show()
                             context.startActivity(
                                 Intent(Intent.ACTION_MAIN)
                                     .addCategory(Intent.CATEGORY_HOME)
-                                    .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                             )
                         }
                     },
                     enabled = selectedIds.isNotEmpty(),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
                 ) {
                     Icon(Icons.Default.FileUpload, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.size(6.dp))
                     Text("Export")
                 }
             }
-        }
+        },
     ) { padding ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             items(apps, key = { it.id }) { app ->
                 val isSelected = selectedIds.contains(app.id)
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(
-                            if (isSelected) MaterialTheme.colorScheme.surface
-                            else MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)
-                        )
-                        .border(
-                            width = if (isSelected) 2.dp else 1.dp,
-                            color = if (isSelected) MaterialTheme.colorScheme.onSurface
-                            else MaterialTheme.colorScheme.outlineVariant,
-                            shape = RoundedCornerShape(14.dp)
-                        )
-                        .clickable { viewModel.toggleSelection(app.id) }
-                        .padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(
+                                if (isSelected) {
+                                    MaterialTheme.colorScheme.surface
+                                } else {
+                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)
+                                },
+                            )
+                            .border(
+                                width = if (isSelected) 2.dp else 1.dp,
+                                color =
+                                    if (isSelected) {
+                                        MaterialTheme.colorScheme.onSurface
+                                    } else {
+                                        MaterialTheme.colorScheme.outlineVariant
+                                    },
+                                shape = RoundedCornerShape(14.dp),
+                            )
+                            .clickable { viewModel.toggleSelection(app.id) }
+                            .padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(
-                                if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                                else MaterialTheme.colorScheme.surfaceVariant
-                            ),
-                        contentAlignment = Alignment.Center
+                        modifier =
+                            Modifier
+                                .size(36.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(
+                                    if (isSelected) {
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                                    } else {
+                                        MaterialTheme.colorScheme.surfaceVariant
+                                    },
+                                ),
+                        contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             imageVector = if (isSelected) Icons.Default.Check else Icons.Outlined.FolderOpen,
                             contentDescription = null,
-                            tint = if (isSelected) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(18.dp)
+                            tint =
+                                if (isSelected) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                            modifier = Modifier.size(18.dp),
                         )
                     }
 
                     Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(start = 12.dp)
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .padding(start = 12.dp),
                     ) {
                         Text(
                             text = app.name,
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurface,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.SemiBold,
                         )
                         Text(
                             text = viewModel.updatedLabel(app.updatedAtMillis),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
 
                     Box(
-                        modifier = Modifier
-                            .size(28.dp)
-                            .clip(CircleShape)
-                            .background(Color.Black.copy(alpha = 0.85f))
-                            .clickable { onOpenApp(viewModel.previewAppIdFor(app)) },
-                        contentAlignment = Alignment.Center
+                        modifier =
+                            Modifier
+                                .size(28.dp)
+                                .clip(CircleShape)
+                                .background(Color.Black.copy(alpha = 0.85f))
+                                .clickable { onOpenApp(viewModel.previewAppIdFor(app)) },
+                        contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.OpenInNew,
                             contentDescription = "Open app",
                             tint = Color.White,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(16.dp),
                         )
                     }
                 }

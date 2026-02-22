@@ -16,21 +16,30 @@ import retrofit2.http.Path
 import retrofit2.http.Streaming
 
 interface PlutoApiService {
-
     @POST("v1/generation-jobs")
-    suspend fun createGenerationJob(@Body request: CreateJobRequest): CreateJobResponse
+    suspend fun createGenerationJob(
+        @Body request: CreateJobRequest,
+    ): CreateJobResponse
 
     @GET("v1/generation-jobs/{jobId}")
-    suspend fun getGenerationJob(@Path("jobId") jobId: String): JobStatusResponse
+    suspend fun getGenerationJob(
+        @Path("jobId") jobId: String,
+    ): JobStatusResponse
 
     @GET("v1/apps/{appId}/versions/latest")
-    suspend fun getLatestVersion(@Path("appId") appId: String): AppVersionResponse
+    suspend fun getLatestVersion(
+        @Path("appId") appId: String,
+    ): AppVersionResponse
 
     @Streaming
     @GET("v1/artifacts/{artifactId}/download")
-    suspend fun downloadArtifact(@Path("artifactId") artifactId: String): ResponseBody
+    suspend fun downloadArtifact(
+        @Path("artifactId") artifactId: String,
+    ): ResponseBody
 
     @Multipart
     @POST("v1/uploads")
-    suspend fun uploadFile(@Part file: MultipartBody.Part): UploadResponse
+    suspend fun uploadFile(
+        @Part file: MultipartBody.Part,
+    ): UploadResponse
 }

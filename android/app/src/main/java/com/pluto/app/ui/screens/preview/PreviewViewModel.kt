@@ -41,10 +41,11 @@ class PreviewViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
 
                 val responseBody = repository.downloadArtifact(artifactId)
 
-                val previewDir = File(
-                    context.filesDir,
-                    "saved_apps/$appId"
-                )
+                val previewDir =
+                    File(
+                        context.filesDir,
+                        "saved_apps/$appId",
+                    )
                 withContext(Dispatchers.IO) {
                     if (previewDir.exists()) previewDir.deleteRecursively()
                     previewDir.mkdirs()
@@ -54,10 +55,11 @@ class PreviewViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
                         var entry = zip.nextEntry
                         while (entry != null) {
                             if (!entry.isDirectory) { // Prevent Zip Slip vulnerability - validate the entry path
-                                val file = File(
-                                    previewDir,
-                                    entry.name
-                                )
+                                val file =
+                                    File(
+                                        previewDir,
+                                        entry.name,
+                                    )
                                 val canonicalFile = file.canonicalFile
                                 val canonicalPreviewDir = previewDir.canonicalFile
 
@@ -75,16 +77,16 @@ class PreviewViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
                     }
                 }
 
-                val indexFile = File(
-                    previewDir,
-                    "index.html"
-                )
+                val indexFile =
+                    File(
+                        previewDir,
+                        "index.html",
+                    )
                 if (indexFile.exists()) {
                     _previewPath.value = indexFile.absolutePath
                 } else {
                     _error.value = "No index.html found in artifact"
                 }
-
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to load preview"
             } finally {

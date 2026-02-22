@@ -13,8 +13,16 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Create data directory for persistent storage
-RUN mkdir -p /app/data
+# Create non-root user and data directory
+RUN adduser --disabled-password --gecos '' appuser \
+    && mkdir -p /app/data \
+    && chown -R appuser:appuser /app/data
+
+# Declare data volume for persistence
+VOLUME ["/app/data"]
+
+# Run as non-root
+USER appuser
 
 # Expose port
 EXPOSE 8000

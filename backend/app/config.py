@@ -26,6 +26,6 @@ DEFAULT_MAX_GENERATION_SECONDS = int(os.getenv("DEFAULT_MAX_GENERATION_SECONDS",
 
 ALLOWED_ORIGINS = [
     origin.strip()
-    for origin in os.getenv("ALLOWED_ORIGINS", "*").split(",")
+    for origin in os.getenv("ALLOWED_ORIGINS", "").split(",")
     if origin.strip()
 ]

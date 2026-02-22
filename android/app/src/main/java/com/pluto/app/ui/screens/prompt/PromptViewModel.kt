@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class PromptViewModel : ViewModel() {
-
     private val repository = AppRepository()
 
     private val _prompt = MutableStateFlow("")

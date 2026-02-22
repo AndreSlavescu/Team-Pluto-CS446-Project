@@ -4,5 +4,5 @@ data class AppsModel(
     val id: String,
     val name: String,
     val localPath: String,
-    val updatedAtMillis: Long
+    val updatedAtMillis: Long,
 )
