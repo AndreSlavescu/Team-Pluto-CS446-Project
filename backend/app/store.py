@@ -60,11 +60,16 @@ class DataStore:
     def _new_id(self, prefix: str) -> str:
         return f"{prefix}_{secrets.token_hex(8)}"
 
+    _SAFE_IMAGE_SUFFIXES = frozenset(
+        {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".heic", ".heif"}
+    )
+
     def create_upload(
         self, *, content: bytes, filename: str, mime_type: str
     ) -> Dict[str, Any]:
         upload_id = self._new_id("upl")
-        suffix = Path(filename).suffix or ""
+        raw_suffix = Path(filename).suffix.lower()
+        suffix = raw_suffix if raw_suffix in self._SAFE_IMAGE_SUFFIXES else ""
         path = config.UPLOADS_DIR / f"{upload_id}{suffix}"
         path.write_bytes(content)
         record = {

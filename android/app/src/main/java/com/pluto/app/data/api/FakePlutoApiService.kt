@@ -10,10 +10,10 @@ import com.pluto.app.data.model.JobProgress
 import com.pluto.app.data.model.JobStatusResponse
 import com.pluto.app.data.model.UploadResponse
 import kotlinx.coroutines.delay
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.ResponseBody
 import okhttp3.ResponseBody.Companion.toResponseBody
-import okhttp3.MediaType.Companion.toMediaType
 import java.io.ByteArrayOutputStream
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
@@ -21,7 +21,6 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 class FakePlutoApiService : PlutoApiService {
-
     private val pollCounts = ConcurrentHashMap<String, Int>()
     private val jobToApp = ConcurrentHashMap<String, String>()
     private val appToName = ConcurrentHashMap<String, String>()
@@ -32,19 +31,20 @@ class FakePlutoApiService : PlutoApiService {
         val jobId = "mock-job-${System.currentTimeMillis()}"
         val appId = "mock-app-${System.nanoTime()}"
         jobToApp[jobId] = appId
-        appToName[appId] = request.prompt
-            .trim()
-            .ifBlank { "Generated App" }
-            .split(" ")
-            .take(4)
-            .joinToString(" ")
-            .replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+        appToName[appId] =
+            request.prompt
+                .trim()
+                .ifBlank { "Generated App" }
+                .split(" ")
+                .take(4)
+                .joinToString(" ")
+                .replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
 
         return CreateJobResponse(
             jobId = jobId,
             appId = appId,
             status = "QUEUED",
-            createdAt = now
+            createdAt = now,
         )
     }
 
@@ -55,35 +55,38 @@ class FakePlutoApiService : PlutoApiService {
         val attempt = pollCounts.merge(jobId, 1) { old, _ -> old + 1 } ?: 1
 
         return when {
-            attempt <= 1 -> JobStatusResponse(
-                jobId = jobId,
-                appId = appId,
-                status = "IN_PROGRESS",
-                createdAt = now,
-                updatedAt = now,
-                progress = JobProgress(stage = "PLAN", percent = 25, message = "Designing UI..."),
-                logs = listOf(JobLog(ts = now, level = "INFO", msg = "Created generation plan"))
-            )
+            attempt <= 1 ->
+                JobStatusResponse(
+                    jobId = jobId,
+                    appId = appId,
+                    status = "IN_PROGRESS",
+                    createdAt = now,
+                    updatedAt = now,
+                    progress = JobProgress(stage = "PLAN", percent = 25, message = "Designing UI..."),
+                    logs = listOf(JobLog(ts = now, level = "INFO", msg = "Created generation plan")),
+                )
 
-            attempt == 2 -> JobStatusResponse(
-                jobId = jobId,
-                appId = appId,
-                status = "IN_PROGRESS",
-                createdAt = now,
-                updatedAt = now,
-                progress = JobProgress(stage = "BUILD", percent = 72, message = "Building assets..."),
-                logs = listOf(JobLog(ts = now, level = "INFO", msg = "Compiling preview bundle"))
-            )
+            attempt == 2 ->
+                JobStatusResponse(
+                    jobId = jobId,
+                    appId = appId,
+                    status = "IN_PROGRESS",
+                    createdAt = now,
+                    updatedAt = now,
+                    progress = JobProgress(stage = "BUILD", percent = 72, message = "Building assets..."),
+                    logs = listOf(JobLog(ts = now, level = "INFO", msg = "Compiling preview bundle")),
+                )
 
-            else -> JobStatusResponse(
-                jobId = jobId,
-                appId = appId,
-                status = "SUCCEEDED",
-                createdAt = now,
-                updatedAt = now,
-                progress = JobProgress(stage = "DONE", percent = 100, message = "Complete"),
-                logs = listOf(JobLog(ts = now, level = "INFO", msg = "Generation complete"))
-            )
+            else ->
+                JobStatusResponse(
+                    jobId = jobId,
+                    appId = appId,
+                    status = "SUCCEEDED",
+                    createdAt = now,
+                    updatedAt = now,
+                    progress = JobProgress(stage = "DONE", percent = 100, message = "Complete"),
+                    logs = listOf(JobLog(ts = now, level = "INFO", msg = "Generation complete")),
+                )
         }
     }
 
@@ -95,20 +98,22 @@ class FakePlutoApiService : PlutoApiService {
             versionId = "mock-version-$appId",
             jobId = "mock-job-for-$appId",
             createdAt = now,
-            artifacts = listOf(
-                Artifact(
-                    type = "web-preview",
-                    downloadUrl = "https://mock.local/v1/artifacts/mock-artifact-$appId/download",
-                    expiresAt = null,
-                    sha256 = "mock-sha"
-                )
-            ),
-            manifest = AppManifest(
-                displayName = displayName,
-                packageName = "com.pluto.mock.${appId.takeLast(8)}",
-                features = listOf("mock", "offline"),
-                ui = "compose"
-            )
+            artifacts =
+                listOf(
+                    Artifact(
+                        type = "web-preview",
+                        downloadUrl = "https://mock.local/v1/artifacts/mock-artifact-$appId/download",
+                        expiresAt = null,
+                        sha256 = "mock-sha",
+                    ),
+                ),
+            manifest =
+                AppManifest(
+                    displayName = displayName,
+                    packageName = "com.pluto.mock.${appId.takeLast(8)}",
+                    features = listOf("mock", "offline"),
+                    ui = "compose",
+                ),
         )
     }
 
@@ -124,12 +129,13 @@ class FakePlutoApiService : PlutoApiService {
         return UploadResponse(
             uploadId = "mock-upload-${System.currentTimeMillis()}",
             mimeType = file.body.contentType()?.toString() ?: "application/octet-stream",
-            sizeBytes = 0
+            sizeBytes = 0,
         )
     }
 
     private fun createPreviewZip(appName: String): ByteArray {
-        val html = """
+        val html =
+            """
             <!doctype html>
             <html>
             <head>
@@ -150,7 +156,7 @@ class FakePlutoApiService : PlutoApiService {
                 </div>
             </body>
             </html>
-        """.trimIndent()
+            """.trimIndent()
 
         val output = ByteArrayOutputStream()
         ZipOutputStream(output).use { zip ->

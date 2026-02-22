@@ -22,7 +22,10 @@ import org.json.JSONArray
 import java.io.File
 
 @Composable
-fun PlutoNavGraph(initialOpenAppId: String? = null, forceOpenApps: Boolean = false) {
+fun PlutoNavGraph(
+    initialOpenAppId: String? = null,
+    forceOpenApps: Boolean = false,
+) {
     val navController = rememberNavController()
     val context = LocalContext.current
     val appsViewModel: AppsViewModel = viewModel()
@@ -38,7 +41,7 @@ fun PlutoNavGraph(initialOpenAppId: String? = null, forceOpenApps: Boolean = fal
 
     NavHost(
         navController = navController,
-        startDestination = startDestination
+        startDestination = startDestination,
     ) {
         composable("prompt") {
             PromptScreen(
@@ -47,15 +50,17 @@ fun PlutoNavGraph(initialOpenAppId: String? = null, forceOpenApps: Boolean = fal
                 },
                 onOpenApps = {
                     navController.navigate("apps")
-                }
+                },
             )
         }
 
         composable(
             route = "generation/{jobId}/{appId}",
-            arguments = listOf(
-                navArgument("jobId") { type = NavType.StringType },
-                navArgument("appId") { type = NavType.StringType })
+            arguments =
+                listOf(
+                    navArgument("jobId") { type = NavType.StringType },
+                    navArgument("appId") { type = NavType.StringType },
+                ),
         ) {
             GenerationScreen(
                 onComplete = { appId ->
@@ -67,14 +72,15 @@ fun PlutoNavGraph(initialOpenAppId: String? = null, forceOpenApps: Boolean = fal
                 onError = {
                     navController.popBackStack(
                         "prompt",
-                        inclusive = false
+                        inclusive = false,
                     )
-                })
+                },
+            )
         }
 
         composable(
             route = "preview/{appId}",
-            arguments = listOf(navArgument("appId") { type = NavType.StringType })
+            arguments = listOf(navArgument("appId") { type = NavType.StringType }),
         ) {
             PreviewScreen(
                 onBack = {
@@ -84,13 +90,13 @@ fun PlutoNavGraph(initialOpenAppId: String? = null, forceOpenApps: Boolean = fal
                     } else {
                         navController.popBackStack(
                             "prompt",
-                            inclusive = false
+                            inclusive = false,
                         )
                     }
                 },
                 onOpenApps = {
                     navController.navigate("apps")
-                }
+                },
             )
         }
 
@@ -99,7 +105,7 @@ fun PlutoNavGraph(initialOpenAppId: String? = null, forceOpenApps: Boolean = fal
                 onOpenApp = { appId ->
                     navController.navigate("preview/$appId")
                 },
-                onCreateApps = { navController.navigate("prompt") }
+                onCreateApps = { navController.navigate("prompt") },
             )
         }
     }
@@ -109,13 +115,14 @@ private fun hasExistingApps(context: android.content.Context): Boolean {
     val prefs = context.getSharedPreferences("my_apps_store", android.content.Context.MODE_PRIVATE)
     val raw = prefs.getString("saved_apps", null)
     if (!raw.isNullOrBlank()) {
-        val hasPersisted = runCatching {
-            val arr = JSONArray(raw)
-            (0 until arr.length()).any { idx ->
-                val item = arr.optJSONObject(idx) ?: return@any false
-                item.optString("localPath").isNotBlank()
-            }
-        }.getOrDefault(false)
+        val hasPersisted =
+            runCatching {
+                val arr = JSONArray(raw)
+                (0 until arr.length()).any { idx ->
+                    val item = arr.optJSONObject(idx) ?: return@any false
+                    item.optString("localPath").isNotBlank()
+                }
+            }.getOrDefault(false)
         if (hasPersisted) return true
     }
 

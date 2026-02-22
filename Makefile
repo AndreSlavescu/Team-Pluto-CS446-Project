@@ -25,24 +25,36 @@ lint-python:
 
 # Android targets
 format-android:
-	@if [ -f gradlew ]; then \
-		chmod +x gradlew && ./gradlew $(GRADLE_ARGS) ktlintFormat; \
+	@if [ ! -f android/gradlew ]; then \
+		echo "ERROR: android/gradlew not found. Are you running from the repo root?"; exit 1; \
+	elif ! command -v java >/dev/null 2>&1; then \
+		echo "ERROR: Java is not installed. Install it with: brew install --cask temurin@17"; exit 1; \
 	else \
-		echo "gradlew not found; skipping Android formatting."; \
+		chmod +x android/gradlew && cd android && ./gradlew $(GRADLE_ARGS) ktlintFormat; \
 	fi
 
 lint-android:
-	@if [ -f gradlew ]; then \
-		chmod +x gradlew && ./gradlew $(GRADLE_ARGS) ktlintCheck lint; \
+	@if [ ! -f android/gradlew ]; then \
+		echo "ERROR: android/gradlew not found. Are you running from the repo root?"; exit 1; \
+	elif ! command -v java >/dev/null 2>&1; then \
+		echo "ERROR: Java is not installed. Install it with: brew install --cask temurin@17"; exit 1; \
 	else \
-		echo "gradlew not found; skipping Android linting."; \
+		chmod +x android/gradlew && cd android && ./gradlew $(GRADLE_ARGS) ktlintCheck; \
+		if [ -n "$$ANDROID_HOME" ] || grep -q "sdk.dir" local.properties 2>/dev/null; then \
+			./gradlew $(GRADLE_ARGS) lint; \
+		else \
+			echo "WARNING: Android lint skipped — Android SDK not found."; \
+			echo "         To run Android lint, install Android Studio: https://developer.android.com/studio"; \
+		fi; \
 	fi
 
 test-android:
-	@if [ -f gradlew ]; then \
-		chmod +x gradlew && ./gradlew $(GRADLE_ARGS) testDebugUnitTest; \
+	@if [ ! -f android/gradlew ]; then \
+		echo "ERROR: android/gradlew not found. Are you running from the repo root?"; exit 1; \
+	elif ! command -v java >/dev/null 2>&1; then \
+		echo "ERROR: Java is not installed. Install it with: brew install --cask temurin@17"; exit 1; \
 	else \
-		echo "gradlew not found; skipping Android tests."; \
+		chmod +x android/gradlew && cd android && ./gradlew $(GRADLE_ARGS) testDebugUnitTest; \
 	fi
 
 # Run all Android quality checks (lint + tests)

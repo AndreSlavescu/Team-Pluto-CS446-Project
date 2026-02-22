@@ -9,17 +9,17 @@ import com.pluto.app.data.model.JobStatusResponse
 import okhttp3.ResponseBody
 
 class AppRepository(
-    private val api: PlutoApiService = ApiClient.service
+    private val api: PlutoApiService = ApiClient.service,
 ) {
-
     suspend fun createJob(
         prompt: String,
-        imageIds: List<String> = emptyList()
+        imageIds: List<String> = emptyList(),
     ): CreateJobResponse {
-        val request = CreateJobRequest(
-            prompt = prompt,
-            inputImages = imageIds
-        )
+        val request =
+            CreateJobRequest(
+                prompt = prompt,
+                inputImages = imageIds,
+            )
         return api.createGenerationJob(request)
     }
 

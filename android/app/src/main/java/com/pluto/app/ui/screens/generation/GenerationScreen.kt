@@ -46,7 +46,7 @@ import kotlinx.coroutines.delay
 fun GenerationScreen(
     onComplete: (appId: String) -> Unit,
     onError: () -> Unit,
-    viewModel: GenerationViewModel = viewModel()
+    viewModel: GenerationViewModel = viewModel(),
 ) {
     val status by viewModel.status.collectAsState()
     val isComplete by viewModel.isComplete.collectAsState()
@@ -61,7 +61,7 @@ fun GenerationScreen(
     GenerationScreenContent(
         status = status,
         error = error,
-        onBackClick = onError
+        onBackClick = onError,
     )
 }
 
@@ -70,17 +70,19 @@ fun GenerationScreen(
 fun GenerationScreenContent(
     status: JobStatusResponse?,
     error: String?,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Generating...") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                    ),
             )
-        }) { padding ->
+        },
+    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -143,7 +145,7 @@ fun GenerationScreenContent(
                     modifier = Modifier.size(120.dp),
                     strokeWidth = 8.dp,
                     color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
                 )
             } else {
                 CircularProgressIndicator(
@@ -151,7 +153,7 @@ fun GenerationScreenContent(
                     modifier = Modifier.size(120.dp),
                     strokeWidth = 8.dp,
                     color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
                 )
             }
 
@@ -160,7 +162,7 @@ fun GenerationScreenContent(
             Text(
                 text = "${(progressAnim.value * 100).toInt()}%",
                 style = MaterialTheme.typography.headlineLarge,
-                color = MaterialTheme.colorScheme.onBackground
+                color = MaterialTheme.colorScheme.onBackground,
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -168,7 +170,7 @@ fun GenerationScreenContent(
             Text(
                 text = progress?.message ?: status?.status ?: "Starting...",
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             error?.let { errorMsg ->
@@ -177,21 +179,22 @@ fun GenerationScreenContent(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer
-                    )
+                    colors =
+                        CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                        ),
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
                             text = "Generation Failed",
                             style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onErrorContainer
+                            color = MaterialTheme.colorScheme.onErrorContainer,
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = errorMsg,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onErrorContainer
+                            color = MaterialTheme.colorScheme.onErrorContainer,
                         )
                     }
                 }
@@ -210,7 +213,7 @@ fun GenerationScreenContent(
                 Text(
                     text = "Logs",
                     style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.align(Alignment.Start)
+                    modifier = Modifier.align(Alignment.Start),
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -221,7 +224,7 @@ fun GenerationScreenContent(
                             text = "${log.level}: ${log.msg}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(vertical = 2.dp)
+                            modifier = Modifier.padding(vertical = 2.dp),
                         )
                     }
                 }
@@ -231,37 +234,38 @@ fun GenerationScreenContent(
 }
 
 class GenerationStateProvider : PreviewParameterProvider<JobStatusResponse?> {
-    override val values = sequenceOf(
-        null,
-        JobStatusResponse(
-            jobId = "1",
-            appId = "1",
-            status = "IN_PROGRESS",
-            createdAt = "",
-            updatedAt = "",
-            progress = JobProgress(stage = "Starting", percent = 20, message = "Initializing...")
-        ),
-        JobStatusResponse(
-            jobId = "1",
-            appId = "1",
-            status = "IN_PROGRESS",
-            createdAt = "",
-            updatedAt = "",
-            progress = JobProgress(stage = "Building", percent = 65, message = "Compiling assets...")
+    override val values =
+        sequenceOf(
+            null,
+            JobStatusResponse(
+                jobId = "1",
+                appId = "1",
+                status = "IN_PROGRESS",
+                createdAt = "",
+                updatedAt = "",
+                progress = JobProgress(stage = "Starting", percent = 20, message = "Initializing..."),
+            ),
+            JobStatusResponse(
+                jobId = "1",
+                appId = "1",
+                status = "IN_PROGRESS",
+                createdAt = "",
+                updatedAt = "",
+                progress = JobProgress(stage = "Building", percent = 65, message = "Compiling assets..."),
+            ),
         )
-    )
 }
 
 @Preview(showBackground = true)
 @Composable
 fun GenerationScreenPreview(
-    @PreviewParameter(GenerationStateProvider::class) status: JobStatusResponse?
+    @PreviewParameter(GenerationStateProvider::class) status: JobStatusResponse?,
 ) {
     MaterialTheme {
         GenerationScreenContent(
             status = status,
             error = if (status?.status == "FAILED") "Mock Error" else null,
-            onBackClick = {}
+            onBackClick = {},
         )
     }
 }

@@ -22,7 +22,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -35,14 +34,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.pluto.app.ui.screens.myapps.AppsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PreviewScreen(
     onBack: () -> Unit,
     onOpenApps: () -> Unit,
-    viewModel: PreviewViewModel = viewModel()
+    viewModel: PreviewViewModel = viewModel(),
 ) {
     val previewPath by viewModel.previewPath.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -61,29 +59,32 @@ fun PreviewScreen(
                     IconButton(onClick = onBack) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = "Back",
                         )
                     }
                 },
                 actions = {
                     IconButton(
                         onClick = onOpenApps,
-                        colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        colors =
+                            IconButtonDefaults.iconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            ),
                     ) {
                         Icon(
                             imageVector = Icons.Default.Home,
-                            contentDescription = "My Apps"
+                            contentDescription = "My Apps",
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                    ),
             )
-        }) { padding ->
+        },
+    ) { padding ->
         Box(
             modifier = Modifier.fillMaxSize().padding(padding).navigationBarsPadding()
         ) {
@@ -91,19 +92,19 @@ fun PreviewScreen(
                 isLoading -> {
                     CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.Center),
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
                     )
                 }
 
                 error != null -> {
                     Column(
                         modifier = Modifier.align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Text(
                             text = error ?: "Unknown error",
                             color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodyLarge
+                            style = MaterialTheme.typography.bodyLarge,
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         OutlinedButton(onClick = onBack) {
@@ -116,20 +117,21 @@ fun PreviewScreen(
                     AndroidView(
                         factory = { ctx ->
                             WebView(ctx).apply {
-                                layoutParams = ViewGroup.LayoutParams(
-                                    ViewGroup.LayoutParams.MATCH_PARENT,
-                                    ViewGroup.LayoutParams.MATCH_PARENT
-                                )
+                                layoutParams =
+                                    ViewGroup.LayoutParams(
+                                        ViewGroup.LayoutParams.MATCH_PARENT,
+                                        ViewGroup.LayoutParams.MATCH_PARENT,
+                                    )
                                 webViewClient = WebViewClient()
                                 settings.javaScriptEnabled = true
                                 settings.domStorageEnabled = true // Security: Restrict file access from file URLs
                                 settings.allowFileAccess = true
                                 settings.allowFileAccessFromFileURLs = false
                                 settings.allowUniversalAccessFromFileURLs = false
-                                loadUrl("file://${previewPath}")
+                                loadUrl("file://$previewPath")
                             }
                         },
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
                     )
                 }
             }

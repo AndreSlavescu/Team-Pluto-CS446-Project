@@ -6,11 +6,11 @@ import android.content.Intent
 import android.content.pm.ShortcutInfo
 import android.content.pm.ShortcutManager
 import android.graphics.drawable.Icon
-import com.pluto.app.MainActivity
 import android.text.format.DateUtils
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.pluto.app.BuildConfig
+import com.pluto.app.MainActivity
 import com.pluto.app.data.repository.AppRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -60,32 +60,45 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
         _selectedIds.value = emptySet()
     }
 
-    fun registerSavedApp(localPath: String, name: String? = null) {
+    fun registerSavedApp(
+        localPath: String,
+        name: String? = null,
+    ) {
         val file = File(localPath)
         if (!file.exists()) return
-        val normalizedPath = if (file.isDirectory) file.absolutePath else file.parentFile?.absolutePath
-            ?: file.absolutePath
-        val fallbackName = if (file.isDirectory) {
-            file.nameWithoutExtension.ifBlank { "Generated App" }
-        } else {
-            file.parentFile?.nameWithoutExtension?.ifBlank { "Generated App" } ?: "Generated App"
-        }
+        val normalizedPath =
+            if (file.isDirectory) {
+                file.absolutePath
+            } else {
+                file.parentFile?.absolutePath
+                    ?: file.absolutePath
+            }
+        val fallbackName =
+            if (file.isDirectory) {
+                file.nameWithoutExtension.ifBlank { "Generated App" }
+            } else {
+                file.parentFile?.nameWithoutExtension?.ifBlank { "Generated App" } ?: "Generated App"
+            }
 
         upsertSavedApp(
             localPath = normalizedPath,
-            name = name ?: fallbackName
+            name = name ?: fallbackName,
         )
     }
 
-    fun registerGeneratedApp(appId: String, name: String? = null) {
-        val generatedDir = File(
-            getApplication<Application>().filesDir,
-            "$DEFAULT_SAVED_APPS_DIR/$appId"
-        )
+    fun registerGeneratedApp(
+        appId: String,
+        name: String? = null,
+    ) {
+        val generatedDir =
+            File(
+                getApplication<Application>().filesDir,
+                "$DEFAULT_SAVED_APPS_DIR/$appId",
+            )
         upsertSavedApp(
             localPath = generatedDir.absolutePath,
             name = name ?: "Generated App",
-            preferredId = appId
+            preferredId = appId,
         )
         viewModelScope.launch {
             runCatching {
@@ -95,7 +108,7 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
                     upsertSavedApp(
                         localPath = generatedDir.absolutePath,
                         name = resolvedName,
-                        preferredId = appId
+                        preferredId = appId,
                     )
                 }
             }
@@ -106,23 +119,28 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
         return extractPreviewAppId(app)
     }
 
-    private fun upsertSavedApp(localPath: String, name: String, preferredId: String? = null) {
+    private fun upsertSavedApp(
+        localPath: String,
+        name: String,
+        preferredId: String? = null,
+    ) {
         val updatedAt = System.currentTimeMillis()
         _savedApps.update { current ->
             val existing = current.firstOrNull { it.localPath == localPath }
-            val updatedEntry = if (existing != null) {
-                existing.copy(
-                    name = name,
-                    updatedAtMillis = updatedAt
-                )
-            } else {
-                AppsModel(
-                    id = preferredId ?: UUID.randomUUID().toString(),
-                    name = name,
-                    localPath = localPath,
-                    updatedAtMillis = updatedAt
-                )
-            }
+            val updatedEntry =
+                if (existing != null) {
+                    existing.copy(
+                        name = name,
+                        updatedAtMillis = updatedAt,
+                    )
+                } else {
+                    AppsModel(
+                        id = preferredId ?: UUID.randomUUID().toString(),
+                        name = name,
+                        localPath = localPath,
+                        updatedAtMillis = updatedAt,
+                    )
+                }
             (current.filterNot { it.localPath == localPath } + updatedEntry)
                 .sortedByDescending { it.updatedAtMillis }
         }
@@ -162,11 +180,12 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun updatedLabel(updatedAtMillis: Long): String {
-        val relative = DateUtils.getRelativeTimeSpanString(
-            updatedAtMillis,
-            System.currentTimeMillis(),
-            DateUtils.MINUTE_IN_MILLIS
-        )
+        val relative =
+            DateUtils.getRelativeTimeSpanString(
+                updatedAtMillis,
+                System.currentTimeMillis(),
+                DateUtils.MINUTE_IN_MILLIS,
+            )
         return "Updated $relative"
     }
 
@@ -175,11 +194,21 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
         val shortcutManager =
             context.getSystemService(ShortcutManager::class.java) ?: return
 
-        val launchShortcuts = apps.map { app ->
-            val targetIntent = Intent(context, MainActivity::class.java).apply {
-                action = Intent.ACTION_VIEW
-                putExtra(MainActivity.EXTRA_OPEN_APPS, true)
-                putExtra(MainActivity.EXTRA_OPEN_APP_ID, extractPreviewAppId(app))
+        val launchShortcuts =
+            apps.map { app ->
+                val targetIntent =
+                    Intent(context, MainActivity::class.java).apply {
+                        action = Intent.ACTION_VIEW
+                        putExtra(MainActivity.EXTRA_OPEN_APPS, true)
+                        putExtra(MainActivity.EXTRA_OPEN_APP_ID, extractPreviewAppId(app))
+                    }
+
+                ShortcutInfo.Builder(context, "pluto-generated-${app.id}")
+                    .setShortLabel(app.name.take(24))
+                    .setLongLabel("Open ${app.name}")
+                    .setIcon(Icon.createWithResource(context, android.R.drawable.sym_def_app_icon))
+                    .setIntent(targetIntent)
+                    .build()
             }
 
             ShortcutInfo.Builder(context, generatedShortcutId(app.id))
@@ -193,8 +222,9 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
         val existingNonGenerated = shortcutManager.dynamicShortcuts
             .filterNot { it.id.startsWith(GENERATED_SHORTCUT_PREFIX) }
 
-        shortcutManager.dynamicShortcuts = (existingNonGenerated + launchShortcuts)
-            .take(4)
+        shortcutManager.dynamicShortcuts =
+            (existingNonGenerated + launchShortcuts)
+                .take(4)
     }
 
     private fun removeLauncherShortcuts(apps: List<AppsModel>) {
@@ -214,7 +244,7 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun mergeSavedApps(
         persisted: List<AppsModel>,
-        scanned: List<AppsModel>
+        scanned: List<AppsModel>,
     ): List<AppsModel> {
         val mergedByPreviewId = linkedMapOf<String, AppsModel>()
 
@@ -225,16 +255,17 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
         scanned.forEach { scannedApp ->
             val key = extractPreviewAppId(scannedApp)
             val existing = mergedByPreviewId[key]
-            mergedByPreviewId[key] = if (existing == null) {
-                scannedApp.copy(id = key)
-            } else {
-                existing.copy(
-                    id = key,
-                    name = if (existing.name.isNotBlank()) existing.name else scannedApp.name,
-                    localPath = scannedApp.localPath,
-                    updatedAtMillis = maxOf(existing.updatedAtMillis, scannedApp.updatedAtMillis)
-                )
-            }
+            mergedByPreviewId[key] =
+                if (existing == null) {
+                    scannedApp.copy(id = key)
+                } else {
+                    existing.copy(
+                        id = key,
+                        name = if (existing.name.isNotBlank()) existing.name else scannedApp.name,
+                        localPath = scannedApp.localPath,
+                        updatedAtMillis = maxOf(existing.updatedAtMillis, scannedApp.updatedAtMillis),
+                    )
+                }
         }
 
         return mergedByPreviewId.values.toList()
@@ -259,7 +290,7 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
                 id = UUID.randomUUID().toString(),
                 name = file.nameWithoutExtension.ifBlank { "Generated App" },
                 localPath = file.absolutePath,
-                updatedAtMillis = file.lastModified()
+                updatedAtMillis = file.lastModified(),
             )
         }
     }
@@ -289,26 +320,26 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
                 id = "default-todo",
                 name = "Todo List App",
                 localPath = File(root, "todo-list-app").absolutePath,
-                updatedAtMillis = now - DateUtils.MINUTE_IN_MILLIS * 2
+                updatedAtMillis = now - DateUtils.MINUTE_IN_MILLIS * 2,
             ),
             AppsModel(
                 id = "default-ecommerce",
                 name = "E-commerce Store",
                 localPath = File(root, "e-commerce-store").absolutePath,
-                updatedAtMillis = now - DateUtils.HOUR_IN_MILLIS
+                updatedAtMillis = now - DateUtils.HOUR_IN_MILLIS,
             ),
             AppsModel(
                 id = "default-portfolio",
                 name = "Portfolio Site",
                 localPath = File(root, "portfolio-site").absolutePath,
-                updatedAtMillis = now - DateUtils.DAY_IN_MILLIS * 2
+                updatedAtMillis = now - DateUtils.DAY_IN_MILLIS * 2,
             ),
             AppsModel(
                 id = "default-chat",
                 name = "Chat Bot Interface",
                 localPath = File(root, "chat-bot-interface").absolutePath,
-                updatedAtMillis = now - DateUtils.DAY_IN_MILLIS * 5
-            )
+                updatedAtMillis = now - DateUtils.DAY_IN_MILLIS * 5,
+            ),
         )
     }
 
@@ -321,7 +352,7 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
                     .put("id", app.id)
                     .put("name", app.name)
                     .put("localPath", app.localPath)
-                    .put("updatedAtMillis", app.updatedAtMillis)
+                    .put("updatedAtMillis", app.updatedAtMillis),
             )
         }
         prefs.edit().putString(KEY_SAVED_APPS, json.toString()).apply()
@@ -341,8 +372,8 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
                             id = item.optString("id").ifBlank { UUID.randomUUID().toString() },
                             name = item.optString("name").ifBlank { "Generated App" },
                             localPath = path,
-                            updatedAtMillis = item.optLong("updatedAtMillis", System.currentTimeMillis())
-                        )
+                            updatedAtMillis = item.optLong("updatedAtMillis", System.currentTimeMillis()),
+                        ),
                     )
                 }
             }
@@ -357,5 +388,4 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
 
         private fun generatedShortcutId(appId: String): String = "$GENERATED_SHORTCUT_PREFIX$appId"
     }
-
 }

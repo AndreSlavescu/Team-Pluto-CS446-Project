@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class GenerationViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
-
     private val repository = AppRepository()
 
     val jobId: String = savedStateHandle["jobId"] ?: ""

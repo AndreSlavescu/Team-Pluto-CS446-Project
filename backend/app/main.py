@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 import mimetypes
+import threading
+import time
+from collections import defaultdict
+from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
 
-from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile
+from fastapi import BackgroundTasks, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
@@ -27,11 +31,37 @@ from .models import (
 )
 from .store import store
 
-app = FastAPI(title="Pluto Generator API", version="0.1.0")
+_rl_lock = threading.Lock()
+_rl_buckets: Dict[str, list] = defaultdict(list)
+_UPLOAD_RATE_LIMIT = 10
+_UPLOAD_RATE_WINDOW = 60
+
+
+def _is_rate_limited(client_ip: str) -> bool:
+    now = time.monotonic()
+    cutoff = now - _UPLOAD_RATE_WINDOW
+    with _rl_lock:
+        _rl_buckets[client_ip] = [t for t in _rl_buckets[client_ip] if t > cutoff]
+        if len(_rl_buckets[client_ip]) >= _UPLOAD_RATE_LIMIT:
+            return True
+        _rl_buckets[client_ip].append(now)
+        return False
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    if not config.OPENAI_API_KEY:
+        raise RuntimeError(
+            "OPENAI_API_KEY environment variable is required but not set"
+        )
+    yield
+
+
+app = FastAPI(title="Pluto Generator API", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=config.ALLOWED_ORIGINS or ["*"],
+    allow_origins=config.ALLOWED_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -87,7 +117,10 @@ def _sha256(path: Path) -> str:
 
 
 @app.post("/v1/uploads", response_model=UploadResponse)
-async def upload_file(file: UploadFile = File(...)) -> UploadResponse:
+async def upload_file(request: Request, file: UploadFile = File(...)) -> UploadResponse:
+    client_ip = request.client.host if request.client else "unknown"
+    if _is_rate_limited(client_ip):
+        _raise_http(429, "RATE_LIMITED", "Too many upload requests, please slow down")
     content = await file.read()
     if len(content) > config.MAX_IMAGE_BYTES:
         _raise_http(400, "IMAGE_TOO_LARGE", "Image exceeds size limit")
@@ -271,7 +304,10 @@ async def download_artifact(artifact_id: str) -> FileResponse:
     if not artifact:
         _raise_http(404, "ARTIFACT_NOT_FOUND", "Artifact not found")
 
-    path = Path(artifact["path"])
+    path = Path(artifact["path"]).resolve()
+    if not str(path).startswith(str(config.ARTIFACTS_DIR.resolve())):
+        _raise_http(404, "ARTIFACT_NOT_FOUND", "Artifact not found")
+
     if not path.exists():
         _raise_http(404, "ARTIFACT_MISSING", "Artifact file missing")
 
