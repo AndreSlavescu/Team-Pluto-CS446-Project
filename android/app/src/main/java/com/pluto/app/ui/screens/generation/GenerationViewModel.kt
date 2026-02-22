@@ -46,6 +46,7 @@ class GenerationViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
                             _isComplete.value = true
                             return@launch
                         }
+
                         "FAILED", "CANCELLED" -> {
                             _error.value = job.error?.message ?: "Generation failed"
                             return@launch
