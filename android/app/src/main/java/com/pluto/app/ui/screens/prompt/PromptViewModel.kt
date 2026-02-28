@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pluto.app.data.model.CreateJobResponse
 import com.pluto.app.data.repository.AppRepository
+import com.pluto.app.data.repository.AppRepository.Companion.extractErrorMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -39,11 +40,15 @@ class PromptViewModel : ViewModel() {
                 val result = repository.createJob(currentPrompt)
                 _jobResult.value = result
             } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to create generation job"
+                _error.value = extractErrorMessage(e)
             } finally {
                 _isLoading.value = false
             }
         }
+    }
+
+    fun clearError() {
+        _error.value = null
     }
 
     fun resetResult() {

@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pluto.app.data.model.JobStatusResponse
 import com.pluto.app.data.repository.AppRepository
+import com.pluto.app.data.repository.AppRepository.Companion.extractErrorMessage
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,19 +28,34 @@ class GenerationViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
+    private var pollingJob: Job? = null
+
+    companion object {
+        private const val MAX_CONSECUTIVE_ERRORS = 3
+    }
+
     init {
         startPolling()
     }
 
+    fun retry() {
+        _error.value = null
+        _isComplete.value = false
+        startPolling()
+    }
+
     private fun startPolling() {
-        viewModelScope.launch {
+        pollingJob?.cancel()
+        pollingJob = viewModelScope.launch {
             var attempts = 0
             val maxAttempts = 150 // 5 minutes at 2 second intervals
+            var consecutiveErrors = 0
 
             while (attempts < maxAttempts) {
                 try {
                     val job = repository.getJobStatus(jobId)
                     _status.value = job
+                    consecutiveErrors = 0
 
                     when (job.status) {
                         "SUCCEEDED" -> {
@@ -52,8 +69,11 @@ class GenerationViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
                         }
                     }
                 } catch (e: Exception) {
-                    _error.value = e.message ?: "Lost connection to server"
-                    return@launch
+                    consecutiveErrors++
+                    if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+                        _error.value = extractErrorMessage(e)
+                        return@launch
+                    }
                 }
 
                 attempts++
