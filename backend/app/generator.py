@@ -29,6 +29,38 @@ Return ONLY valid JSON (no markdown) with this schema:
 Keep values short and practical.
 """.strip()
 
+EDIT_BLUEPRINT_SYSTEM_PROMPT = """
+You are an expert Android app generator. You are given the HTML source of an existing app and the user's change request.
+Produce an UPDATED JSON blueprint that reflects the requested changes while preserving everything else.
+Return ONLY valid JSON (no markdown) with this schema:
+{
+  "display_name": string,
+  "package_name": string,
+  "features": [string],
+  "ui": string,
+  "screens": [string],
+  "data_models": [string],
+  "notes": string
+}
+Keep values short and practical.
+""".strip()
+
+EDIT_HTML_SYSTEM_PROMPT = """
+You are an expert mobile web developer. You are given the HTML source of an existing app, an updated blueprint, and the user's change request.
+Modify the existing HTML to implement the requested changes while preserving all untouched functionality.
+
+Requirements:
+- Single HTML file with all CSS and JavaScript inlined — no external files, no CDN links
+- Mobile-first responsive layout optimised for 360-480 px width
+- Every feature in the blueprint must actually work — use localStorage for persistence where needed
+- All buttons and forms must do something — no placeholders, no "coming soon"
+- Clean modern dark UI: background #0e0f12, cards #1a1d24, accent #3bd6c6, text #f4f7ff
+- Preserve existing functionality that is NOT affected by the change request
+- No lorem ipsum, no sample data that isn't meaningful
+
+Return ONLY the raw HTML starting with <!doctype html>. No markdown fences, no explanation.
+""".strip()
+
 APP_GEN_SYSTEM_PROMPT = """
 You are an expert mobile web developer. Generate a complete, self-contained single-file HTML app from the blueprint and original prompt below.
 
@@ -99,6 +131,79 @@ def _generate_html_app(
                         {
                             "type": "input_text",
                             "text": f"Original prompt: {prompt}\n\nBlueprint:\n{blueprint_text}",
+                        }
+                    ],
+                },
+            ],
+            max_output_tokens=65536,
+        )
+        return response.output_text
+    except Exception:
+        return None
+
+
+def _generate_edit_blueprint(
+    existing_html: str,
+    change_request: str,
+    client: OpenAI,
+) -> Optional[Dict[str, Any]]:
+    try:
+        response = client.responses.create(
+            model=config.OPENAI_MODEL,
+            input=[
+                {
+                    "role": "system",
+                    "content": [
+                        {"type": "input_text", "text": EDIT_BLUEPRINT_SYSTEM_PROMPT}
+                    ],
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "input_text",
+                            "text": (
+                                f"Change request: {change_request}\n\n"
+                                f"Existing HTML:\n{existing_html}"
+                            ),
+                        }
+                    ],
+                },
+            ],
+            max_output_tokens=1200,
+        )
+        return _parse_json(response.output_text or "")
+    except Exception:
+        return None
+
+
+def _generate_edited_html_app(
+    blueprint: Dict[str, Any],
+    change_request: str,
+    existing_html: str,
+    client: OpenAI,
+) -> Optional[str]:
+    blueprint_text = json.dumps(blueprint, indent=2)
+    try:
+        response = client.responses.create(
+            model=config.OPENAI_MODEL,
+            input=[
+                {
+                    "role": "system",
+                    "content": [
+                        {"type": "input_text", "text": EDIT_HTML_SYSTEM_PROMPT}
+                    ],
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "input_text",
+                            "text": (
+                                f"Change request: {change_request}\n\n"
+                                f"Updated blueprint:\n{blueprint_text}\n\n"
+                                f"Existing HTML:\n{existing_html}"
+                            ),
                         }
                     ],
                 },
@@ -315,10 +420,23 @@ def run_generation_job(store: DataStore, job_id: str) -> None:
         return
 
     store.update_job(job_id, {"status": "RUNNING"})
-    store.set_progress(job_id, "PREPARING_INPUTS", 10, "Preparing inputs")
-    store.add_log(job_id, "INFO", "Preparing generation inputs")
 
     request = job.get("request", {})
+    base_template = request.get("baseTemplate")
+    is_edit = bool(base_template)
+
+    store.set_progress(
+        job_id,
+        "PREPARING_INPUTS",
+        10,
+        "Reviewing existing app" if is_edit else "Preparing inputs",
+    )
+    store.add_log(
+        job_id,
+        "INFO",
+        "Preparing edit inputs" if is_edit else "Preparing generation inputs",
+    )
+
     prompt = request.get("prompt", "")
     constraints = request.get("constraints") or {}
     input_images = request.get("inputImages") or []
@@ -345,7 +463,12 @@ def run_generation_job(store: DataStore, job_id: str) -> None:
             }
         )
 
-    store.set_progress(job_id, "CALLING_LLM", 30, "Planning app blueprint")
+    store.set_progress(
+        job_id,
+        "CALLING_LLM",
+        30,
+        "Planning changes" if is_edit else "Planning app blueprint",
+    )
     store.add_log(job_id, "INFO", "Calling OpenAI model")
 
     blueprint: Optional[Dict[str, Any]] = None
@@ -355,22 +478,26 @@ def run_generation_job(store: DataStore, job_id: str) -> None:
         if not config.OPENAI_API_KEY:
             raise RuntimeError("OPENAI_API_KEY is not configured")
         client = OpenAI(api_key=config.OPENAI_API_KEY)
-        response = client.responses.create(
-            model=config.OPENAI_MODEL,
-            input=[
-                {
-                    "role": "system",
-                    "content": [{"type": "input_text", "text": SYSTEM_PROMPT}],
-                },
-                {
-                    "role": "user",
-                    "content": content,
-                },
-            ],
-            max_output_tokens=1200,
-        )
-        raw_output = response.output_text
-        blueprint = _parse_json(raw_output or "")
+
+        if is_edit:
+            blueprint = _generate_edit_blueprint(base_template, prompt, client)
+        else:
+            response = client.responses.create(
+                model=config.OPENAI_MODEL,
+                input=[
+                    {
+                        "role": "system",
+                        "content": [{"type": "input_text", "text": SYSTEM_PROMPT}],
+                    },
+                    {
+                        "role": "user",
+                        "content": content,
+                    },
+                ],
+                max_output_tokens=1200,
+            )
+            raw_output = response.output_text
+            blueprint = _parse_json(raw_output or "")
     except Exception as exc:  # pragma: no cover - defensive logging
         error_code = (
             "OPENAI_ERROR" if isinstance(exc, OpenAIError) else "GENERATION_ERROR"
@@ -404,9 +531,21 @@ def run_generation_job(store: DataStore, job_id: str) -> None:
 
     html_content: Optional[str] = None
     if blueprint and client:
-        store.set_progress(job_id, "GENERATING_APP", 60, "Generating app code")
-        store.add_log(job_id, "INFO", "Generating functional app")
-        html_content = _generate_html_app(blueprint, prompt, client)
+        store.set_progress(
+            job_id,
+            "GENERATING_APP",
+            60,
+            "Applying changes" if is_edit else "Generating app code",
+        )
+        store.add_log(
+            job_id, "INFO", "Applying edits" if is_edit else "Generating functional app"
+        )
+        if is_edit:
+            html_content = _generate_edited_html_app(
+                blueprint, prompt, base_template, client
+            )
+        else:
+            html_content = _generate_html_app(blueprint, prompt, client)
         if html_content:
             store.add_log(job_id, "INFO", "App code generated successfully")
         else:
@@ -426,7 +565,12 @@ def run_generation_job(store: DataStore, job_id: str) -> None:
         store.add_log(job_id, "ERROR", "Generation timed out")
         return
 
-    store.set_progress(job_id, "ASSEMBLING_ARTIFACT", 80, "Building project bundle")
+    store.set_progress(
+        job_id,
+        "ASSEMBLING_ARTIFACT",
+        80,
+        "Packaging updated app" if is_edit else "Building project bundle",
+    )
     store.add_log(job_id, "INFO", "Assembling artifact")
 
     work_dir = config.WORK_DIR / job_id
@@ -460,7 +604,9 @@ def run_generation_job(store: DataStore, job_id: str) -> None:
         artifacts=[artifact_record],
     )
 
-    store.set_progress(job_id, "FINALIZING", 100, "Generation complete")
+    store.set_progress(
+        job_id, "FINALIZING", 100, "Edit complete" if is_edit else "Generation complete"
+    )
     store.update_job(
         job_id,
         {
