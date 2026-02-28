@@ -465,7 +465,9 @@ def run_generation_job(store: DataStore, job_id: str) -> None:
                     },
                 },
             )
-            store.add_log(job_id, "ERROR", "Generated HTML failed structural validation")
+            store.add_log(
+                job_id, "ERROR", "Generated HTML failed structural validation"
+            )
             return
         store.add_log(job_id, "INFO", "App code generated successfully")
 

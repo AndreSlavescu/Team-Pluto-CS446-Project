@@ -46,42 +46,43 @@ class GenerationViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
 
     private fun startPolling() {
         pollingJob?.cancel()
-        pollingJob = viewModelScope.launch {
-            var attempts = 0
-            val maxAttempts = 150 // 5 minutes at 2 second intervals
-            var consecutiveErrors = 0
+        pollingJob =
+            viewModelScope.launch {
+                var attempts = 0
+                val maxAttempts = 150 // 5 minutes at 2 second intervals
+                var consecutiveErrors = 0
 
-            while (attempts < maxAttempts) {
-                try {
-                    val job = repository.getJobStatus(jobId)
-                    _status.value = job
-                    consecutiveErrors = 0
+                while (attempts < maxAttempts) {
+                    try {
+                        val job = repository.getJobStatus(jobId)
+                        _status.value = job
+                        consecutiveErrors = 0
 
-                    when (job.status) {
-                        "SUCCEEDED" -> {
-                            _isComplete.value = true
-                            return@launch
+                        when (job.status) {
+                            "SUCCEEDED" -> {
+                                _isComplete.value = true
+                                return@launch
+                            }
+
+                            "FAILED", "CANCELLED" -> {
+                                _error.value = job.error?.message ?: "Generation failed"
+                                return@launch
+                            }
                         }
-
-                        "FAILED", "CANCELLED" -> {
-                            _error.value = job.error?.message ?: "Generation failed"
+                    } catch (e: Exception) {
+                        consecutiveErrors++
+                        if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+                            _error.value = extractErrorMessage(e)
                             return@launch
                         }
                     }
-                } catch (e: Exception) {
-                    consecutiveErrors++
-                    if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
-                        _error.value = extractErrorMessage(e)
-                        return@launch
-                    }
+
+                    attempts++
+                    delay(2000)
                 }
 
-                attempts++
-                delay(2000)
+                // Timeout after max attempts
+                _error.value = "Generation timed out after 5 minutes"
             }
-
-            // Timeout after max attempts
-            _error.value = "Generation timed out after 5 minutes"
-        }
     }
 }

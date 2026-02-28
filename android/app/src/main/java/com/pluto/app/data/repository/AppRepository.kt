@@ -33,7 +33,9 @@ class AppRepository(
                         val detailStr = json.optString("detail", "")
                         if (detailStr.isNotBlank()) return detailStr
                     }
-                } catch (_: Exception) { /* fall through to status-based message */ }
+                } catch (_: Exception) {
+                    // fall through to status-based message
+                }
 
                 return when (e.code()) {
                     400 -> "Invalid request. Please check your input and try again."
