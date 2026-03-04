@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -40,6 +41,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 fun PromptScreen(
     onJobCreated: (jobId: String, appId: String) -> Unit,
     onOpenApps: () -> Unit,
+    onOpenSettings: () -> Unit = {},
     viewModel: PromptViewModel = viewModel(),
 ) {
     val prompt by viewModel.prompt.collectAsState()
@@ -68,6 +70,19 @@ fun PromptScreen(
                     )
                 },
                 actions = {
+                    IconButton(
+                        onClick = onOpenSettings,
+                        colors =
+                            IconButtonDefaults.iconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            ),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Info,
+                            contentDescription = "About",
+                        )
+                    }
                     IconButton(
                         onClick = onOpenApps,
                         colors =

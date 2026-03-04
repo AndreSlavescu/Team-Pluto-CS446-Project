@@ -18,6 +18,7 @@ import com.pluto.app.ui.screens.myapps.AppsScreen
 import com.pluto.app.ui.screens.myapps.AppsViewModel
 import com.pluto.app.ui.screens.preview.PreviewScreen
 import com.pluto.app.ui.screens.prompt.PromptScreen
+import com.pluto.app.ui.screens.settings.SettingsScreen
 import org.json.JSONArray
 import java.io.File
 
@@ -50,6 +51,9 @@ fun PlutoNavGraph(
                 },
                 onOpenApps = {
                     navController.navigate("apps")
+                },
+                onOpenSettings = {
+                    navController.navigate("settings")
                 },
             )
         }
@@ -106,6 +110,15 @@ fun PlutoNavGraph(
                     navController.navigate("preview/$appId")
                 },
                 onCreateApps = { navController.navigate("prompt") },
+                onOpenSettings = {
+                    navController.navigate("settings")
+                },
+            )
+        }
+
+        composable(route = "settings") {
+            SettingsScreen(
+                onBack = { navController.popBackStack() },
             )
         }
     }

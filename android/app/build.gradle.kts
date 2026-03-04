@@ -30,10 +30,16 @@ android {
             buildConfigField("boolean", "USE_DEFAULT_APPS", "false")
         }
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
             buildConfigField("String", "API_BASE_URL", "\"https://team-pluto-cs446-project-production.up.railway.app\"")
             buildConfigField("boolean", "USE_MOCK_API", "false")
             buildConfigField("boolean", "USE_DEFAULT_APPS", "false")
+            // TODO: Replace with a proper release signing config before Play Store submission
             signingConfig = signingConfigs.getByName("debug")
         }
     }
