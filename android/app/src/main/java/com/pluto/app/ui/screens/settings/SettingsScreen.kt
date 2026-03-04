@@ -128,34 +128,34 @@ private fun SectionCard(
 
 private val PRIVACY_POLICY_TEXT =
     """
-Effective Date: March 2026
+    Effective Date: March 2026
 
-Pluto ("the App") is developed by Team Pluto as a university project at the University of Waterloo.
+    Pluto ("the App") is developed by Team Pluto as a university project at the University of Waterloo.
 
-Data We Collect
-The App does not require you to create an account. We do not collect personal information such as your name, email address, or location.
+    Data We Collect
+    The App does not require you to create an account. We do not collect personal information such as your name, email address, or location.
 
-When you use the App, the following data is sent to our server solely to generate your requested app:
-- The text prompt you enter describing the app you want to build
-- Any images you optionally upload as reference
+    When you use the App, the following data is sent to our server solely to generate your requested app:
+    - The text prompt you enter describing the app you want to build
+    - Any images you optionally upload as reference
 
-This data is processed by our server using a third-party AI service (OpenAI) to generate the app output. We do not store your prompts or images beyond what is needed to complete the generation.
+    This data is processed by our server using a third-party AI service (OpenAI) to generate the app output. We do not store your prompts or images beyond what is needed to complete the generation.
 
-Data Stored on Your Device
-Generated apps are saved locally on your device. This data never leaves your device unless you choose to share it.
+    Data Stored on Your Device
+    Generated apps are saved locally on your device. This data never leaves your device unless you choose to share it.
 
-Third-Party Services
-We use OpenAI's API to generate app content. Your prompts and uploaded images are sent to OpenAI for processing. OpenAI's use of this data is governed by their own privacy policy.
+    Third-Party Services
+    We use OpenAI's API to generate app content. Your prompts and uploaded images are sent to OpenAI for processing. OpenAI's use of this data is governed by their own privacy policy.
 
-Data Sharing
-We do not sell, trade, or share your data with any third parties beyond the AI processing described above.
+    Data Sharing
+    We do not sell, trade, or share your data with any third parties beyond the AI processing described above.
 
-Children's Privacy
-The App is not directed at children under 13. We do not knowingly collect data from children.
+    Children's Privacy
+    The App is not directed at children under 13. We do not knowingly collect data from children.
 
-Changes to This Policy
-We may update this policy from time to time. Changes will be reflected in the App.
+    Changes to This Policy
+    We may update this policy from time to time. Changes will be reflected in the App.
 
-Contact
-If you have questions about this policy, contact us at pluto-cs446@uwaterloo.ca.
+    Contact
+    If you have questions about this policy, contact us at pluto-cs446@uwaterloo.ca.
     """.trimIndent()

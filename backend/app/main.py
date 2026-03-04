@@ -81,7 +81,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        response.headers["Permissions-Policy"] = (
+            "camera=(), microphone=(), geolocation=()"
+        )
         return response
 
 
@@ -247,7 +249,9 @@ async def create_generation_job(
 ) -> CreateJobResponse:
     client_ip = req.client.host if req.client else "unknown"
     if _is_rate_limited(client_ip, "generation"):
-        _raise_http(429, "RATE_LIMITED", "Too many generation requests, please slow down")
+        _raise_http(
+            429, "RATE_LIMITED", "Too many generation requests, please slow down"
+        )
 
     if len(request.prompt) > config.MAX_PROMPT_CHARS:
         _raise_http(400, "PROMPT_TOO_LONG", "Prompt exceeds maximum length")
