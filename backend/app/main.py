@@ -137,8 +137,9 @@ generate your requested app:</p>
   <li>Any images you optionally upload as reference</li>
 </ul>
 <p>This data is processed by our server using a third-party AI service (OpenAI)
-to generate the app output. We do not store your prompts or images beyond what
-is needed to complete the generation.</p>
+to generate the app output. Your prompts and uploaded images may be retained on
+our server for a limited period to support generation and debugging. Data is not
+associated with any user identity.</p>
 
 <h2>Data Stored on Your Device</h2>
 <p>Generated apps are saved locally on your device. This data never leaves your

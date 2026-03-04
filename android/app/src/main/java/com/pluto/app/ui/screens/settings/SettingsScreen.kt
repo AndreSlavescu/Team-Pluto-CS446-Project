@@ -139,7 +139,7 @@ private val PRIVACY_POLICY_TEXT =
     - The text prompt you enter describing the app you want to build
     - Any images you optionally upload as reference
 
-    This data is processed by our server using a third-party AI service (OpenAI) to generate the app output. We do not store your prompts or images beyond what is needed to complete the generation.
+    This data is processed by our server using a third-party AI service (OpenAI) to generate the app output. Your prompts and uploaded images may be retained on our server for a limited period to support generation and debugging. Data is not associated with any user identity.
 
     Data Stored on Your Device
     Generated apps are saved locally on your device. This data never leaves your device unless you choose to share it.
