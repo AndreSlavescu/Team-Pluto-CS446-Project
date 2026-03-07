@@ -67,6 +67,20 @@ class AppRepository(
         return api.createGenerationJob(request)
     }
 
+    suspend fun editJob(
+        appId: String,
+        editPrompt: String,
+        currentHtml: String,
+    ): CreateJobResponse {
+        val request =
+            CreateJobRequest(
+                prompt = editPrompt,
+                appId = appId,
+                baseTemplate = currentHtml,
+            )
+        return api.createGenerationJob(request)
+    }
+
     suspend fun getJobStatus(jobId: String): JobStatusResponse {
         return api.getGenerationJob(jobId)
     }

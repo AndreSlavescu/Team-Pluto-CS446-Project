@@ -1,6 +1,8 @@
 package com.pluto.app.ui.screens.prompt
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.pluto.app.data.model.CreateJobResponse
 import com.pluto.app.data.repository.AppRepository
@@ -9,9 +11,16 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.io.File
 
-class PromptViewModel : ViewModel() {
+class PromptViewModel(
+    application: Application,
+    savedStateHandle: SavedStateHandle,
+) : AndroidViewModel(application) {
     private val repository = AppRepository()
+
+    private val editAppId: String? = savedStateHandle["editAppId"]
+    val isEditMode: Boolean = editAppId != null
 
     private val _prompt = MutableStateFlow("")
     val prompt: StateFlow<String> = _prompt.asStateFlow()
@@ -37,7 +46,18 @@ class PromptViewModel : ViewModel() {
             _isLoading.value = true
             _error.value = null
             try {
-                val result = repository.createJob(currentPrompt)
+                val result =
+                    if (isEditMode) {
+                        val htmlFile =
+                            File(
+                                getApplication<Application>().filesDir,
+                                "saved_apps/$editAppId/index.html",
+                            )
+                        val currentHtml = if (htmlFile.exists()) htmlFile.readText() else ""
+                        repository.editJob(editAppId!!, currentPrompt, currentHtml)
+                    } else {
+                        repository.createJob(currentPrompt)
+                    }
                 _jobResult.value = result
             } catch (e: Exception) {
                 _error.value = extractErrorMessage(e)

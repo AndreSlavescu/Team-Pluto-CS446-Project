@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -45,6 +46,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 fun PreviewScreen(
     onBack: () -> Unit,
     onOpenApps: () -> Unit,
+    onEdit: () -> Unit,
     viewModel: PreviewViewModel = viewModel(),
 ) {
     val previewPath by viewModel.previewPath.collectAsState()
@@ -69,6 +71,19 @@ fun PreviewScreen(
                     }
                 },
                 actions = {
+                    IconButton(
+                        onClick = onEdit,
+                        colors =
+                            IconButtonDefaults.iconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            ),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit App",
+                        )
+                    }
                     IconButton(
                         onClick = onOpenApps,
                         colors =
