@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -60,6 +61,7 @@ fun GenerationScreen(
     GenerationScreenContent(
         status = status,
         error = error,
+        onRetryClick = viewModel::retry,
         onBackClick = onError,
     )
 }
@@ -69,6 +71,7 @@ fun GenerationScreen(
 fun GenerationScreenContent(
     status: JobStatusResponse?,
     error: String?,
+    onRetryClick: (() -> Unit)? = null,
     onBackClick: () -> Unit,
 ) {
     Scaffold(
@@ -203,6 +206,13 @@ fun GenerationScreenContent(
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
+
+                if (onRetryClick != null) {
+                    Button(onClick = onRetryClick) {
+                        Text("Retry")
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
 
                 OutlinedButton(onClick = onBackClick) {
                     Text("Go Back")

@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import logging
 import re
 import time
 from pathlib import Path
@@ -13,6 +14,8 @@ from openai import OpenAI, OpenAIError
 
 from . import config
 from .store import DataStore
+
+logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """
 You are an expert Android app generator. Produce a concise JSON blueprint for a new app based on the user's one-sentence prompt and optional images.
@@ -139,7 +142,20 @@ def _generate_html_app(
         )
         return response.output_text
     except Exception:
+        logger.exception("HTML app generation failed")
         return None
+
+
+def _validate_html(html: str) -> bool:
+    """Check that generated HTML looks structurally valid."""
+    stripped = html.strip().lower()
+    if not stripped:
+        return False
+    if not (stripped.startswith("<!doctype html") or stripped.startswith("<html")):
+        return False
+    if "</html>" not in stripped:
+        return False
+    return True
 
 
 def _generate_edit_blueprint(
@@ -529,6 +545,24 @@ def run_generation_job(store: DataStore, job_id: str) -> None:
         store.add_log(job_id, "ERROR", "Generation timed out")
         return
 
+    if blueprint is None:
+        if raw_output:
+            work_dir = config.WORK_DIR / job_id
+            work_dir.mkdir(parents=True, exist_ok=True)
+            (work_dir / "blueprint_raw.txt").write_text(raw_output)
+        store.update_job(
+            job_id,
+            {
+                "status": "FAILED",
+                "error": {
+                    "code": "BLUEPRINT_PARSE_ERROR",
+                    "message": "Failed to generate a valid app blueprint. Please try rephrasing your prompt.",
+                },
+            },
+        )
+        store.add_log(job_id, "ERROR", "Blueprint JSON parsing failed")
+        return
+
     html_content: Optional[str] = None
     if blueprint and client:
         store.set_progress(
@@ -546,10 +580,35 @@ def run_generation_job(store: DataStore, job_id: str) -> None:
             )
         else:
             html_content = _generate_html_app(blueprint, prompt, client)
-        if html_content:
-            store.add_log(job_id, "INFO", "App code generated successfully")
-        else:
-            store.add_log(job_id, "WARN", "App code generation failed, using spec view")
+        if html_content is None:
+            store.update_job(
+                job_id,
+                {
+                    "status": "FAILED",
+                    "error": {
+                        "code": "APP_GENERATION_ERROR",
+                        "message": "Failed to generate app code. Please try again.",
+                    },
+                },
+            )
+            store.add_log(job_id, "ERROR", "App code generation returned None")
+            return
+        if not _validate_html(html_content):
+            store.update_job(
+                job_id,
+                {
+                    "status": "FAILED",
+                    "error": {
+                        "code": "INVALID_HTML_OUTPUT",
+                        "message": "Generated app failed validation. Please try again.",
+                    },
+                },
+            )
+            store.add_log(
+                job_id, "ERROR", "Generated HTML failed structural validation"
+            )
+            return
+        store.add_log(job_id, "INFO", "App code generated successfully")
 
     if time.monotonic() - started_at > max_seconds:
         store.update_job(
@@ -573,36 +632,48 @@ def run_generation_job(store: DataStore, job_id: str) -> None:
     )
     store.add_log(job_id, "INFO", "Assembling artifact")
 
-    work_dir = config.WORK_DIR / job_id
-    if work_dir.exists():
-        for path in work_dir.rglob("*"):
-            if path.is_file():
-                path.unlink()
-        for path in sorted(work_dir.rglob("*"), reverse=True):
-            if path.is_dir():
-                path.rmdir()
-    work_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        work_dir = config.WORK_DIR / job_id
+        if work_dir.exists():
+            for path in work_dir.rglob("*"):
+                if path.is_file():
+                    path.unlink()
+            for path in sorted(work_dir.rglob("*"), reverse=True):
+                if path.is_dir():
+                    path.rmdir()
+        work_dir.mkdir(parents=True, exist_ok=True)
 
-    if blueprint is None and raw_output:
-        (work_dir / "blueprint_raw.txt").write_text(raw_output)
+        _create_project_bundle(work_dir, prompt, blueprint, html_content)
 
-    _create_project_bundle(work_dir, prompt, blueprint, html_content)
+        zip_path = config.ARTIFACTS_DIR / f"{job_id}_android_project.zip"
+        _zip_directory(work_dir, zip_path)
 
-    zip_path = config.ARTIFACTS_DIR / f"{job_id}_android_project.zip"
-    _zip_directory(work_dir, zip_path)
+        artifact_record = store.create_artifact(
+            artifact_type="ANDROID_PROJECT_ZIP",
+            path=zip_path,
+        )
 
-    artifact_record = store.create_artifact(
-        artifact_type="ANDROID_PROJECT_ZIP",
-        path=zip_path,
-    )
-
-    manifest = _build_manifest(prompt, blueprint)
-    version_record = store.create_version(
-        app_id=job["appId"],
-        job_id=job_id,
-        manifest=manifest,
-        artifacts=[artifact_record],
-    )
+        manifest = _build_manifest(prompt, blueprint)
+        version_record = store.create_version(
+            app_id=job["appId"],
+            job_id=job_id,
+            manifest=manifest,
+            artifacts=[artifact_record],
+        )
+    except Exception:
+        logger.exception("Artifact assembly failed for job %s", job_id)
+        store.update_job(
+            job_id,
+            {
+                "status": "FAILED",
+                "error": {
+                    "code": "ARTIFACT_ERROR",
+                    "message": "Failed to assemble app artifacts. Please try again.",
+                },
+            },
+        )
+        store.add_log(job_id, "ERROR", "Artifact assembly failed")
+        return
 
     store.set_progress(
         job_id, "FINALIZING", 100, "Edit complete" if is_edit else "Generation complete"
