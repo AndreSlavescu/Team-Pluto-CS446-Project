@@ -5,6 +5,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pluto.app.data.repository.AppRepository
+import com.pluto.app.data.repository.AppRepository.Companion.extractErrorMessage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -88,11 +89,17 @@ class PreviewViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
                     _error.value = "No index.html found in artifact"
                 }
             } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to load preview"
+                _error.value = extractErrorMessage(e)
             } finally {
                 _isLoading.value = false
             }
         }
+    }
+
+    fun retry(context: Context) {
+        _error.value = null
+        _previewPath.value = null
+        loadPreview(context)
     }
 
     private fun extractArtifactId(downloadUrl: String): String {
