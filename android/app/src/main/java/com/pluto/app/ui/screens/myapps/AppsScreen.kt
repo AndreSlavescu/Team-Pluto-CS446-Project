@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Info
@@ -61,6 +62,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 @Composable
 fun AppsScreen(
     onOpenApp: (appId: String) -> Unit,
+    onEditApp: (appId: String) -> Unit = {},
     onExportApps: (List<AppsModel>) -> Unit = {},
     onCreateApps: () -> Unit = {},
     onOpenSettings: () -> Unit = {},
@@ -143,60 +145,87 @@ fun AppsScreen(
             )
         },
         bottomBar = {
-            Row(
+            Column(
                 modifier =
                     Modifier
                         .fillMaxWidth()
                         .background(MaterialTheme.colorScheme.background)
                         .padding(horizontal = 16.dp, vertical = 14.dp)
                         .navigationBarsPadding(),
-                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = "${selectedIds.size} Selected",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.padding(bottom = 10.dp),
                 )
-                Button(
-                    onClick = { viewModel.deleteSelectedApps() },
-                    enabled = selectedIds.isNotEmpty(),
-                    colors =
-                        ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer,
-                            contentColor = MaterialTheme.colorScheme.error,
-                        ),
-                    shape = RoundedCornerShape(12.dp),
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.size(6.dp))
-                    Text("Delete")
-                }
+                    Button(
+                        onClick = {
+                            val selected = viewModel.selectedApps()
+                            if (selected.size == 1) {
+                                val appId = viewModel.previewAppIdFor(selected.first())
+                                viewModel.clearSelection()
+                                onEditApp(appId)
+                            }
+                        },
+                        enabled = selectedIds.size == 1,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        colors =
+                            ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            ),
+                    ) {
+                        Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.size(6.dp))
+                        Text("Edit")
+                    }
 
-                Spacer(modifier = Modifier.size(10.dp))
+                    Button(
+                        onClick = { viewModel.deleteSelectedApps() },
+                        enabled = selectedIds.isNotEmpty(),
+                        modifier = Modifier.weight(1f),
+                        colors =
+                            ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.error,
+                            ),
+                        shape = RoundedCornerShape(12.dp),
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.size(6.dp))
+                        Text("Delete")
+                    }
 
-                Button(
-                    onClick = {
-                        val exportedCount = viewModel.exportSelectedApps(onExportApps)
-                        if (exportedCount > 0) {
-                            Toast.makeText(
-                                context,
-                                "Shortcuts created. Long-press Pluto app icon to view them.",
-                                Toast.LENGTH_LONG,
-                            ).show()
-                            context.startActivity(
-                                Intent(Intent.ACTION_MAIN)
-                                    .addCategory(Intent.CATEGORY_HOME)
-                                    .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                            )
-                        }
-                    },
-                    enabled = selectedIds.isNotEmpty(),
-                    shape = RoundedCornerShape(12.dp),
-                ) {
-                    Icon(Icons.Default.FileUpload, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.size(6.dp))
-                    Text("Export")
+                    Button(
+                        onClick = {
+                            val exportedCount = viewModel.exportSelectedApps(onExportApps)
+                            if (exportedCount > 0) {
+                                Toast.makeText(
+                                    context,
+                                    "Shortcuts created. Long-press Pluto app icon to view them.",
+                                    Toast.LENGTH_LONG,
+                                ).show()
+                                context.startActivity(
+                                    Intent(Intent.ACTION_MAIN)
+                                        .addCategory(Intent.CATEGORY_HOME)
+                                        .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                                )
+                            }
+                        },
+                        enabled = selectedIds.isNotEmpty(),
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                    ) {
+                        Icon(Icons.Default.FileUpload, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.size(6.dp))
+                        Text("Export")
+                    }
                 }
             }
         },

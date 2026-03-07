@@ -59,6 +59,33 @@ fun PlutoNavGraph(
         }
 
         composable(
+            route = "prompt?editAppId={editAppId}",
+            arguments =
+                listOf(
+                    navArgument("editAppId") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                ),
+        ) { backStackEntry ->
+            val editAppId = backStackEntry.arguments?.getString("editAppId")
+            PromptScreen(
+                onJobCreated = { jobId, appId ->
+                    navController.navigate("generation/$jobId/$appId") {
+                        popUpTo("prompt?editAppId=$editAppId") { inclusive = true }
+                    }
+                },
+                onOpenApps = {
+                    navController.navigate("apps")
+                },
+                onBack = {
+                    navController.popBackStack()
+                },
+            )
+        }
+
+        composable(
             route = "generation/{jobId}/{appId}",
             arguments =
                 listOf(
@@ -85,7 +112,8 @@ fun PlutoNavGraph(
         composable(
             route = "preview/{appId}",
             arguments = listOf(navArgument("appId") { type = NavType.StringType }),
-        ) {
+        ) { backStackEntry ->
+            val appId = backStackEntry.arguments?.getString("appId") ?: ""
             PreviewScreen(
                 onBack = {
                     val previousRoute = navController.previousBackStackEntry?.destination?.route
@@ -101,6 +129,9 @@ fun PlutoNavGraph(
                 onOpenApps = {
                     navController.navigate("apps")
                 },
+                onEdit = {
+                    navController.navigate("prompt?editAppId=$appId")
+                },
             )
         }
 
@@ -108,6 +139,9 @@ fun PlutoNavGraph(
             AppsScreen(
                 onOpenApp = { appId ->
                     navController.navigate("preview/$appId")
+                },
+                onEditApp = { appId ->
+                    navController.navigate("prompt?editAppId=$appId")
                 },
                 onCreateApps = { navController.navigate("prompt") },
                 onOpenSettings = {

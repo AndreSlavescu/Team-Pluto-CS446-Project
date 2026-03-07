@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Button
@@ -42,12 +43,14 @@ fun PromptScreen(
     onJobCreated: (jobId: String, appId: String) -> Unit,
     onOpenApps: () -> Unit,
     onOpenSettings: () -> Unit = {},
+    onBack: (() -> Unit)? = null,
     viewModel: PromptViewModel = viewModel(),
 ) {
     val prompt by viewModel.prompt.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val jobResult by viewModel.jobResult.collectAsState()
+    val isEditMode = viewModel.isEditMode
 
     LaunchedEffect(jobResult) {
         jobResult?.let {
@@ -64,10 +67,20 @@ fun PromptScreen(
             TopAppBar(
                 title = {
                     Text(
-                        "Pluto",
+                        if (isEditMode) "Edit App" else "Pluto",
                         style = MaterialTheme.typography.headlineMedium,
                         color = MaterialTheme.colorScheme.primary,
                     )
+                },
+                navigationIcon = {
+                    if (isEditMode && onBack != null) {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                            )
+                        }
+                    }
                 },
                 actions = {
                     IconButton(
@@ -83,18 +96,20 @@ fun PromptScreen(
                             contentDescription = "About",
                         )
                     }
-                    IconButton(
-                        onClick = onOpenApps,
-                        colors =
-                            IconButtonDefaults.iconButtonColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            ),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Home,
-                            contentDescription = "My Apps",
-                        )
+                    if (!isEditMode) {
+                        IconButton(
+                            onClick = onOpenApps,
+                            colors =
+                                IconButtonDefaults.iconButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                ),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Home,
+                                contentDescription = "My Apps",
+                            )
+                        }
                     }
                 },
                 colors =
@@ -111,7 +126,7 @@ fun PromptScreen(
             Spacer(modifier = Modifier.height(48.dp))
 
             Text(
-                text = "Describe your app",
+                text = if (isEditMode) "Describe your changes" else "Describe your app",
                 style = MaterialTheme.typography.headlineLarge,
                 color = MaterialTheme.colorScheme.onBackground,
             )
@@ -119,7 +134,7 @@ fun PromptScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Tell us what you want to build in one sentence",
+                text = if (isEditMode) "What would you like to change?" else "Tell us what you want to build in one sentence",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -131,7 +146,11 @@ fun PromptScreen(
                 value = prompt,
                 onValueChange = viewModel::updatePrompt,
                 modifier = Modifier.fillMaxWidth().height(140.dp),
-                placeholder = { Text("A todo app with categories and due dates...") },
+                placeholder = {
+                    Text(
+                        if (isEditMode) "Add a dark mode toggle..." else "A todo app with categories and due dates...",
+                    )
+                },
                 shape = RoundedCornerShape(16.dp),
                 enabled = !isLoading,
                 colors =
@@ -194,7 +213,7 @@ fun PromptScreen(
                     )
                 } else {
                     Text(
-                        text = "Generate App",
+                        text = if (isEditMode) "Apply Changes" else "Generate App",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onPrimary,
                     )

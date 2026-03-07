@@ -4,6 +4,7 @@ data class CreateJobRequest(
     val prompt: String,
     val inputImages: List<String> = emptyList(),
     val baseTemplate: String? = null,
+    val appId: String? = null,
     val constraints: JobConstraints? = null,
     val client: ClientInfo? = null,
 )

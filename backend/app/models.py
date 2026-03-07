@@ -43,6 +43,7 @@ class CreateJobRequest(CamelModel):
     prompt: str = Field(..., min_length=1)
     input_images: List[str] = Field(default_factory=list)
     base_template: Optional[str] = None
+    app_id: Optional[str] = None
     constraints: Optional[JobConstraints] = None
     client: Optional[ClientInfo] = None
 

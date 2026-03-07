@@ -267,7 +267,12 @@ async def create_generation_job(
         if not store.get_upload(upload_id):
             _raise_http(400, "UNKNOWN_UPLOAD", "Upload not found")
 
-    app_record = store.create_app()
+    if request.app_id:
+        app_record = store.get_app(request.app_id)
+        if not app_record:
+            _raise_http(404, "APP_NOT_FOUND", "App not found")
+    else:
+        app_record = store.create_app()
     job_record = store.create_job(
         app_id=app_record["appId"], request=request.model_dump(by_alias=True)
     )
