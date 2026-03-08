@@ -28,11 +28,14 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.outlined.FolderOpen
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.OpenInNew
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -62,6 +65,7 @@ fun AppsScreen(
     onEditApp: (appId: String) -> Unit = {},
     onExportApps: (List<AppsModel>) -> Unit = {},
     onCreateApps: () -> Unit = {},
+    onOpenSettings: () -> Unit = {},
     viewModel: AppsViewModel = viewModel(),
 ) {
     val apps by viewModel.savedApps.collectAsState()
@@ -103,6 +107,19 @@ fun AppsScreen(
                     }
                 },
                 actions = {
+                    IconButton(
+                        onClick = onOpenSettings,
+                        colors =
+                            IconButtonDefaults.iconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            ),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Info,
+                            contentDescription = "About",
+                        )
+                    }
                     Button(
                         onClick = {
                             if (!isNavigatingToPrompt) {
