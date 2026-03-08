@@ -84,3 +84,30 @@ data class UploadResponse(
     val mimeType: String,
     val sizeBytes: Int,
 )
+
+data class RegisterRequest(
+    val email: String,
+    val password: String,
+)
+
+data class LoginRequest(
+    val email: String,
+    val password: String,
+)
+
+data class TokenResponse(
+    val accessToken: String,
+    val refreshToken: String,
+    val tokenType: String,
+    val expiresIn: Int,
+)
+
+data class RefreshRequest(
+    val refreshToken: String,
+)
+
+data class UserResponse(
+    val userId: String,
+    val email: String,
+    val createdAt: String,
+)

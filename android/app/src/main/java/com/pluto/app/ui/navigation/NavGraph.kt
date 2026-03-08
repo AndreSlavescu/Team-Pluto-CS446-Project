@@ -13,6 +13,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.pluto.app.data.auth.TokenStore
+import com.pluto.app.ui.screens.auth.AuthScreen
 import com.pluto.app.ui.screens.generation.GenerationScreen
 import com.pluto.app.ui.screens.myapps.AppsScreen
 import com.pluto.app.ui.screens.myapps.AppsViewModel
@@ -30,7 +32,14 @@ fun PlutoNavGraph(
     val navController = rememberNavController()
     val context = LocalContext.current
     val appsViewModel: AppsViewModel = viewModel()
-    val startDestination = if (forceOpenApps || hasExistingApps(context)) "apps" else "prompt"
+    val startDestination =
+        if (!TokenStore.isLoggedIn()) {
+            "auth"
+        } else if (forceOpenApps || hasExistingApps(context)) {
+            "apps"
+        } else {
+            "prompt"
+        }
     var hasHandledInitialAppOpen by remember { mutableStateOf(false) }
 
     LaunchedEffect(initialOpenAppId, hasHandledInitialAppOpen) {
@@ -44,6 +53,16 @@ fun PlutoNavGraph(
         navController = navController,
         startDestination = startDestination,
     ) {
+        composable("auth") {
+            AuthScreen(
+                onAuthSuccess = {
+                    navController.navigate("prompt") {
+                        popUpTo("auth") { inclusive = true }
+                    }
+                },
+            )
+        }
+
         composable("prompt") {
             PromptScreen(
                 onJobCreated = { jobId, appId ->
@@ -153,6 +172,11 @@ fun PlutoNavGraph(
         composable(route = "settings") {
             SettingsScreen(
                 onBack = { navController.popBackStack() },
+                onLoggedOut = {
+                    navController.navigate("auth") {
+                        popUpTo(0) { inclusive = true }
+                    }
+                },
             )
         }
     }

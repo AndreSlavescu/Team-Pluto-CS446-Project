@@ -13,24 +13,79 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.pluto.app.BuildConfig
+import com.pluto.app.data.auth.AuthRepository
+import com.pluto.app.data.auth.TokenStore
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onBack: () -> Unit) {
+fun SettingsScreen(
+    onBack: () -> Unit,
+    onLoggedOut: () -> Unit = {},
+) {
+    val scope = rememberCoroutineScope()
+    val authRepo = remember { AuthRepository() }
+    val email = TokenStore.getEmail() ?: "Unknown"
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete Account") },
+            text = {
+                Text(
+                    "This will permanently delete your account and all associated data. This cannot be undone.",
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        scope.launch {
+                            try {
+                                authRepo.deleteAccount()
+                            } catch (_: Exception) {
+                                TokenStore.clearTokens()
+                            }
+                            onLoggedOut()
+                        }
+                    },
+                ) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel")
+                }
+            },
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -78,6 +133,42 @@ fun SettingsScreen(onBack: () -> Unit) {
             )
 
             Spacer(modifier = Modifier.height(24.dp))
+
+            SectionCard("Account") {
+                Text(
+                    text = email,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedButton(
+                    onClick = {
+                        scope.launch {
+                            authRepo.logout()
+                            onLoggedOut()
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Text("Sign Out")
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(
+                    onClick = { showDeleteDialog = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor = MaterialTheme.colorScheme.error,
+                        ),
+                ) {
+                    Text("Delete Account")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             SectionCard("Privacy Policy") {
                 Text(
@@ -133,13 +224,16 @@ private val PRIVACY_POLICY_TEXT =
     Pluto ("the App") is developed by Team Pluto as a university project at the University of Waterloo.
 
     Data We Collect
-    The App does not require you to create an account. We do not collect personal information such as your name, email address, or location.
+    When you create an account, we collect your email address and a securely hashed version of your password. We do not collect your name, location, or other personal information.
 
     When you use the App, the following data is sent to our server solely to generate your requested app:
     - The text prompt you enter describing the app you want to build
     - Any images you optionally upload as reference
 
-    This data is processed by our server using a third-party AI service (OpenAI) to generate the app output. Your prompts and uploaded images may be retained on our server for a limited period to support generation and debugging. Data is not associated with any user identity.
+    This data is processed by our server using a third-party AI service (OpenAI) to generate the app output. Your prompts and uploaded images may be retained on our server for a limited period to support generation and debugging.
+
+    Account Deletion
+    You can delete your account at any time from within the App. When you delete your account, your email, password hash, and authentication tokens are permanently removed from our servers.
 
     Data Stored on Your Device
     Generated apps are saved locally on your device. This data never leaves your device unless you choose to share it.

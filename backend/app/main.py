@@ -7,18 +7,35 @@ import threading
 import time
 from collections import defaultdict
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List
 
-from fastapi import BackgroundTasks, FastAPI, File, HTTPException, Request, UploadFile
+from fastapi import (
+    BackgroundTasks,
+    Depends,
+    FastAPI,
+    File,
+    HTTPException,
+    Request,
+    UploadFile,
+)
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
 from . import config
+from .auth import (
+    create_access_token,
+    create_refresh_token,
+    get_current_user,
+    get_optional_user,
+    hash_password,
+    hash_token,
+    verify_password,
+)
 from .generator import run_generation_job
 from .models import (
     ApiError,
@@ -32,7 +49,12 @@ from .models import (
     JobLog,
     JobProgress,
     JobStatusResponse,
+    LoginRequest,
+    RefreshRequest,
+    RegisterRequest,
+    TokenResponse,
     UploadResponse,
+    UserResponse,
 )
 from .store import store
 
@@ -44,6 +66,7 @@ _rl_buckets: Dict[str, Dict[str, list]] = defaultdict(lambda: defaultdict(list))
 _RATE_LIMITS: Dict[str, tuple] = {
     "upload": (10, 60),
     "generation": (5, 60),
+    "auth": (10, 60),
 }
 
 
@@ -71,6 +94,8 @@ async def lifespan(app: FastAPI):
         raise RuntimeError(
             "OPENAI_API_KEY environment variable is required but not set"
         )
+    if not config.JWT_SECRET:
+        raise RuntimeError("JWT_SECRET environment variable is required but not set")
     yield
 
 
@@ -93,8 +118,8 @@ app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=config.ALLOWED_ORIGINS,
-    allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type", "Accept"],
+    allow_methods=["GET", "POST", "DELETE"],
+    allow_headers=["Content-Type", "Accept", "Authorization"],
 )
 
 logger = logging.getLogger(__name__)
@@ -162,8 +187,9 @@ async def privacy_policy() -> HTMLResponse:
 University of Waterloo.</p>
 
 <h2>Data We Collect</h2>
-<p>The App does not require you to create an account. We do not collect personal
-information such as your name, email address, or location.</p>
+<p>When you create an account, we collect your email address and a securely
+hashed version of your password. We do not collect your name, location, or
+other personal information.</p>
 <p>When you use the App, the following data is sent to our server solely to
 generate your requested app:</p>
 <ul>
@@ -172,8 +198,12 @@ generate your requested app:</p>
 </ul>
 <p>This data is processed by our server using a third-party AI service (OpenAI)
 to generate the app output. Your prompts and uploaded images may be retained on
-our server for a limited period to support generation and debugging. Data is not
-associated with any user identity.</p>
+our server for a limited period to support generation and debugging.</p>
+
+<h2>Account Deletion</h2>
+<p>You can delete your account at any time from within the App. When you delete
+your account, your email, password hash, and authentication tokens are
+permanently removed from our servers.</p>
 
 <h2>Data Stored on Your Device</h2>
 <p>Generated apps are saved locally on your device. This data never leaves your
@@ -252,6 +282,103 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+def _issue_tokens(user_id: str, email: str) -> TokenResponse:
+    access = create_access_token(user_id, email)
+    refresh = create_refresh_token()
+    expires_at = (
+        datetime.now() + timedelta(days=config.REFRESH_TOKEN_EXPIRE_DAYS)
+    ).isoformat()
+    store.create_refresh_token(
+        user_id=user_id,
+        token_hash=hash_token(refresh),
+        expires_at=expires_at,
+    )
+    return TokenResponse(
+        access_token=access,
+        refresh_token=refresh,
+        expires_in=config.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+    )
+
+
+@app.post("/v1/auth/register", response_model=TokenResponse)
+async def register(request: Request, body: RegisterRequest) -> TokenResponse:
+    client_ip = request.client.host if request.client else "unknown"
+    if _is_rate_limited(client_ip, "auth"):
+        _raise_http(429, "RATE_LIMITED", "Too many requests, please slow down")
+
+    email = body.email.strip().lower()
+    if not _EMAIL_RE.match(email):
+        _raise_http(400, "INVALID_EMAIL", "Invalid email address")
+    if len(body.password) < 8:
+        _raise_http(400, "WEAK_PASSWORD", "Password must be at least 8 characters")
+    if store.get_user_by_email(email):
+        _raise_http(409, "EMAIL_TAKEN", "An account with this email already exists")
+
+    hashed = hash_password(body.password)
+    user = store.create_user(email=email, hashed_password=hashed)
+    return _issue_tokens(user["userId"], user["email"])
+
+
+@app.post("/v1/auth/login", response_model=TokenResponse)
+async def login(request: Request, body: LoginRequest) -> TokenResponse:
+    client_ip = request.client.host if request.client else "unknown"
+    if _is_rate_limited(client_ip, "auth"):
+        _raise_http(429, "RATE_LIMITED", "Too many requests, please slow down")
+
+    email = body.email.strip().lower()
+    user = store.get_user_by_email(email)
+    if not user or not verify_password(body.password, user["hashedPassword"]):
+        _raise_http(401, "INVALID_CREDENTIALS", "Invalid email or password")
+
+    return _issue_tokens(user["userId"], user["email"])
+
+
+@app.post("/v1/auth/refresh", response_model=TokenResponse)
+async def refresh_token(body: RefreshRequest) -> TokenResponse:
+    token_record = store.get_refresh_token_by_hash(hash_token(body.refresh_token))
+    if not token_record:
+        _raise_http(401, "INVALID_TOKEN", "Invalid refresh token")
+
+    user = store.get_user(token_record["userId"])
+    if not user:
+        _raise_http(401, "INVALID_TOKEN", "User not found")
+
+    store.delete_refresh_token(token_record["tokenId"])
+    return _issue_tokens(user["userId"], user["email"])
+
+
+@app.post("/v1/auth/logout")
+async def logout(
+    body: RefreshRequest,
+    user: dict = Depends(get_current_user),
+) -> Dict[str, str]:
+    token_record = store.get_refresh_token_by_hash(hash_token(body.refresh_token))
+    if token_record:
+        store.delete_refresh_token(token_record["tokenId"])
+    return {"status": "ok"}
+
+
+@app.get("/v1/auth/me", response_model=UserResponse)
+async def get_me(user: dict = Depends(get_current_user)) -> UserResponse:
+    return UserResponse(
+        user_id=user["userId"],
+        email=user["email"],
+        created_at=_iso_to_dt(user["createdAt"]),
+    )
+
+
+@app.delete("/v1/auth/account")
+async def delete_account(
+    user: dict = Depends(get_current_user),
+) -> Dict[str, str]:
+    store.delete_refresh_tokens_for_user(user["userId"])
+    store.delete_user(user["userId"])
+    return {"status": "deleted"}
+
+
 @app.post("/v1/uploads", response_model=UploadResponse)
 async def upload_file(request: Request, file: UploadFile = File(...)) -> UploadResponse:
     client_ip = request.client.host if request.client else "unknown"
@@ -280,7 +407,10 @@ async def upload_file(request: Request, file: UploadFile = File(...)) -> UploadR
 
 @app.post("/v1/generation-jobs", response_model=CreateJobResponse)
 async def create_generation_job(
-    req: Request, request: CreateJobRequest, background_tasks: BackgroundTasks
+    req: Request,
+    request: CreateJobRequest,
+    background_tasks: BackgroundTasks,
+    user: dict | None = Depends(get_optional_user),
 ) -> CreateJobResponse:
     client_ip = req.client.host if req.client else "unknown"
     if _is_rate_limited(client_ip, "generation"):
@@ -306,7 +436,8 @@ async def create_generation_job(
         if not app_record:
             _raise_http(404, "APP_NOT_FOUND", "App not found")
     else:
-        app_record = store.create_app()
+        owner_id = user["userId"] if user else None
+        app_record = store.create_app(owner_id=owner_id)
     job_record = store.create_job(
         app_id=app_record["appId"], request=request.model_dump(by_alias=True)
     )
