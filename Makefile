@@ -7,7 +7,7 @@ endif
 
 # Install Python formatting and linting tools
 install-python-tools:
-	pip install black ruff
+	pip install "black>=26.3.0" ruff
 
 # Format all code
 format: format-python format-android
