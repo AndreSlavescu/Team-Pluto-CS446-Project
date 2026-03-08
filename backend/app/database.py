@@ -35,15 +35,18 @@ def init_db() -> None:
 
     _pool = psycopg_pool.ConnectionPool(config.DATABASE_URL, min_size=1, max_size=5)
     with _pool.connection() as conn:
-        conn.execute("""
+        conn.execute(
+            """
             CREATE TABLE IF NOT EXISTS users (
                 id TEXT PRIMARY KEY,
                 email TEXT UNIQUE NOT NULL,
                 hashed_password TEXT NOT NULL,
                 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
             )
-            """)
-        conn.execute("""
+            """
+        )
+        conn.execute(
+            """
             CREATE TABLE IF NOT EXISTS refresh_tokens (
                 id TEXT PRIMARY KEY,
                 user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -51,11 +54,14 @@ def init_db() -> None:
                 expires_at TIMESTAMPTZ NOT NULL,
                 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
             )
-            """)
-        conn.execute("""
+            """
+        )
+        conn.execute(
+            """
             CREATE INDEX IF NOT EXISTS idx_refresh_tokens_hash
             ON refresh_tokens(token_hash)
-            """)
+            """
+        )
         conn.commit()
 
 

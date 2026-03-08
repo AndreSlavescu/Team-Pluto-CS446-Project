@@ -15,7 +15,7 @@ def _setup_env(tmp_path):
     os.environ["JWT_SECRET"] = "test-secret-key-for-jwt-signing"
     os.environ["DATA_DIR"] = str(tmp_path)
     os.environ["STATE_PATH"] = str(tmp_path / "state.json")
-    os.environ["DATABASE_URL"] = ""  # Use in-memory fallback
+    os.environ["DATABASE_PUBLIC_URL"] = ""  # Use in-memory fallback
 
     # Reload modules so they pick up the new env vars
     import importlib
