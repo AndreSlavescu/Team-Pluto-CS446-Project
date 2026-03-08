@@ -27,6 +27,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
 from . import config
+from . import database as db
 from .auth import (
     create_access_token,
     create_refresh_token,
@@ -96,6 +97,7 @@ async def lifespan(app: FastAPI):
         )
     if not config.JWT_SECRET:
         raise RuntimeError("JWT_SECRET environment variable is required but not set")
+    db.init_db()
     yield
 
 
@@ -291,7 +293,7 @@ def _issue_tokens(user_id: str, email: str) -> TokenResponse:
     expires_at = (
         datetime.now() + timedelta(days=config.REFRESH_TOKEN_EXPIRE_DAYS)
     ).isoformat()
-    store.create_refresh_token(
+    db.create_refresh_token(
         user_id=user_id,
         token_hash=hash_token(refresh),
         expires_at=expires_at,
@@ -314,11 +316,11 @@ async def register(request: Request, body: RegisterRequest) -> TokenResponse:
         _raise_http(400, "INVALID_EMAIL", "Invalid email address")
     if len(body.password) < 8:
         _raise_http(400, "WEAK_PASSWORD", "Password must be at least 8 characters")
-    if store.get_user_by_email(email):
+    if db.get_user_by_email(email):
         _raise_http(409, "EMAIL_TAKEN", "An account with this email already exists")
 
     hashed = hash_password(body.password)
-    user = store.create_user(email=email, hashed_password=hashed)
+    user = db.create_user(email=email, hashed_password=hashed)
     return _issue_tokens(user["userId"], user["email"])
 
 
@@ -329,7 +331,7 @@ async def login(request: Request, body: LoginRequest) -> TokenResponse:
         _raise_http(429, "RATE_LIMITED", "Too many requests, please slow down")
 
     email = body.email.strip().lower()
-    user = store.get_user_by_email(email)
+    user = db.get_user_by_email(email)
     if not user or not verify_password(body.password, user["hashedPassword"]):
         _raise_http(401, "INVALID_CREDENTIALS", "Invalid email or password")
 
@@ -338,15 +340,15 @@ async def login(request: Request, body: LoginRequest) -> TokenResponse:
 
 @app.post("/v1/auth/refresh", response_model=TokenResponse)
 async def refresh_token(body: RefreshRequest) -> TokenResponse:
-    token_record = store.get_refresh_token_by_hash(hash_token(body.refresh_token))
+    token_record = db.get_refresh_token_by_hash(hash_token(body.refresh_token))
     if not token_record:
         _raise_http(401, "INVALID_TOKEN", "Invalid refresh token")
 
-    user = store.get_user(token_record["userId"])
+    user = db.get_user(token_record["userId"])
     if not user:
         _raise_http(401, "INVALID_TOKEN", "User not found")
 
-    store.delete_refresh_token(token_record["tokenId"])
+    db.delete_refresh_token(token_record["tokenId"])
     return _issue_tokens(user["userId"], user["email"])
 
 
@@ -355,9 +357,9 @@ async def logout(
     body: RefreshRequest,
     user: dict = Depends(get_current_user),
 ) -> Dict[str, str]:
-    token_record = store.get_refresh_token_by_hash(hash_token(body.refresh_token))
+    token_record = db.get_refresh_token_by_hash(hash_token(body.refresh_token))
     if token_record:
-        store.delete_refresh_token(token_record["tokenId"])
+        db.delete_refresh_token(token_record["tokenId"])
     return {"status": "ok"}
 
 
@@ -374,8 +376,8 @@ async def get_me(user: dict = Depends(get_current_user)) -> UserResponse:
 async def delete_account(
     user: dict = Depends(get_current_user),
 ) -> Dict[str, str]:
-    store.delete_refresh_tokens_for_user(user["userId"])
-    store.delete_user(user["userId"])
+    db.delete_refresh_tokens_for_user(user["userId"])
+    db.delete_user(user["userId"])
     return {"status": "deleted"}
 
 

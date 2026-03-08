@@ -32,8 +32,6 @@ class DataStore:
             "apps": {},
             "versions": {},
             "artifacts": {},
-            "users": {},
-            "refresh_tokens": {},
         }
         self._ensure_dirs()
         self._load()
@@ -88,71 +86,6 @@ class DataStore:
 
     def get_upload(self, upload_id: str) -> Optional[Dict[str, Any]]:
         return self._state["uploads"].get(upload_id)
-
-    def create_user(self, *, email: str, hashed_password: str) -> Dict[str, Any]:
-        user_id = self._new_id("usr")
-        record = {
-            "userId": user_id,
-            "email": email,
-            "hashedPassword": hashed_password,
-            "createdAt": _iso(_now()),
-        }
-        with self._lock:
-            self._state["users"][user_id] = record
-            self._save()
-        return record
-
-    def get_user(self, user_id: str) -> Optional[Dict[str, Any]]:
-        return self._state["users"].get(user_id)
-
-    def get_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
-        for user in self._state["users"].values():
-            if user["email"] == email:
-                return user
-        return None
-
-    def delete_user(self, user_id: str) -> None:
-        with self._lock:
-            self._state["users"].pop(user_id, None)
-            self._save()
-
-    def create_refresh_token(
-        self, *, user_id: str, token_hash: str, expires_at: str
-    ) -> Dict[str, Any]:
-        token_id = self._new_id("rtk")
-        record = {
-            "tokenId": token_id,
-            "userId": user_id,
-            "tokenHash": token_hash,
-            "expiresAt": expires_at,
-            "createdAt": _iso(_now()),
-        }
-        with self._lock:
-            self._state["refresh_tokens"][token_id] = record
-            self._save()
-        return record
-
-    def get_refresh_token_by_hash(self, token_hash: str) -> Optional[Dict[str, Any]]:
-        for token in self._state["refresh_tokens"].values():
-            if token["tokenHash"] == token_hash:
-                return token
-        return None
-
-    def delete_refresh_token(self, token_id: str) -> None:
-        with self._lock:
-            self._state["refresh_tokens"].pop(token_id, None)
-            self._save()
-
-    def delete_refresh_tokens_for_user(self, user_id: str) -> None:
-        with self._lock:
-            to_remove = [
-                tid
-                for tid, t in self._state["refresh_tokens"].items()
-                if t["userId"] == user_id
-            ]
-            for tid in to_remove:
-                del self._state["refresh_tokens"][tid]
-            self._save()
 
     def create_app(self, *, owner_id: str | None = None) -> Dict[str, Any]:
         app_id = self._new_id("app")
