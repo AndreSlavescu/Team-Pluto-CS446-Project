@@ -73,7 +73,7 @@ fun ImagePromptScreen(
     val error by viewModel.error.collectAsState()
     val jobResult by viewModel.jobResult.collectAsState()
     val isEditMode = viewModel.isEditMode
-    
+
     val scrollState = rememberScrollState()
 
     val launcher = rememberLauncherForActivityResult(
@@ -113,11 +113,10 @@ fun ImagePromptScreen(
                     if (!isEditMode) {
                         IconButton(
                             onClick = onOpenApps,
-                            colors =
-                                IconButtonDefaults.iconButtonColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                ),
+                            colors = IconButtonDefaults.iconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            ),
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Home,
@@ -126,10 +125,9 @@ fun ImagePromptScreen(
                         }
                     }
                 },
-                colors =
-                    TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.background,
-                    ),
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                ),
             )
         },
     ) { padding ->
@@ -149,7 +147,9 @@ fun ImagePromptScreen(
             Image(
                 painter = painterResource(id = R.drawable.pluto),
                 contentDescription = "Pluto Logo",
-                modifier = Modifier.size(120.dp).clip(CircleShape)
+                modifier = Modifier
+                    .size(120.dp)
+                    .clip(CircleShape)
             )
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -170,21 +170,24 @@ fun ImagePromptScreen(
             ) {
                 selectedImages.forEach { uri ->
                     SelectedImageItem(
-                        uri = uri,
-                        onRemove = { viewModel.removeImage(uri) }
-                    )
+                        uri = uri, onRemove = { viewModel.removeImage(uri) })
                 }
-                
+
                 if (selectedImages.size < 3) {
                     AddImageButton(
                         onClick = {
                             launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                        },
-                        modifier = Modifier.weight(1f).height(100.dp)
+                        }, modifier = Modifier
+                            .weight(1f)
+                            .height(100.dp)
                     )
                 }
-                
-                repeat(maxOf(0, 3 - selectedImages.size - (if (selectedImages.size < 3) 1 else 0))) {
+
+                repeat(
+                    maxOf(
+                        0, 3 - selectedImages.size - (if (selectedImages.size < 3) 1 else 0)
+                    )
+                ) {
                     Spacer(modifier = Modifier.weight(1f))
                 }
             }
@@ -194,7 +197,9 @@ fun ImagePromptScreen(
             OutlinedTextField(
                 value = imageprompt,
                 onValueChange = viewModel::updateImagePrompt,
-                modifier = Modifier.fillMaxWidth().height(140.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(140.dp),
                 placeholder = {
                     Text(
                         if (isEditMode) {
@@ -208,11 +213,10 @@ fun ImagePromptScreen(
                 },
                 shape = RoundedCornerShape(16.dp),
                 enabled = !isLoading,
-                colors =
-                    OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant,
-                    ),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant,
+                ),
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -222,10 +226,9 @@ fun ImagePromptScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    colors =
-                        CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer,
-                        ),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                    ),
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
@@ -246,17 +249,18 @@ fun ImagePromptScreen(
 
             val hasText = imageprompt.isNotBlank()
             val hasImages = selectedImages.isNotEmpty()
-            
+
             if (hasText || hasImages) {
                 Button(
                     onClick = viewModel::submitImagePrompt,
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
                     enabled = !isLoading,
                     shape = RoundedCornerShape(16.dp),
-                    colors =
-                        ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                        ),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                    ),
                 ) {
                     if (isLoading) {
                         CircularProgressIndicator(
@@ -273,7 +277,7 @@ fun ImagePromptScreen(
                     }
                 }
             }
-            
+
             // Extra spacer to allow scrolling past the button when keyboard is up
             Spacer(modifier = Modifier.height(32.dp))
         }
@@ -282,9 +286,7 @@ fun ImagePromptScreen(
 
 @Composable
 fun SelectedImageItem(
-    uri: Uri,
-    onRemove: () -> Unit,
-    modifier: Modifier = Modifier
+    uri: Uri, onRemove: () -> Unit, modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
@@ -298,7 +300,7 @@ fun SelectedImageItem(
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop
         )
-        
+
         Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -320,8 +322,7 @@ fun SelectedImageItem(
 
 @Composable
 fun AddImageButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    onClick: () -> Unit, modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
