@@ -109,3 +109,30 @@ class CancelJobResponse(CamelModel):
     job_id: str
     status: str
     updated_at: datetime
+
+
+class RegisterRequest(CamelModel):
+    email: str
+    password: str
+
+
+class LoginRequest(CamelModel):
+    email: str
+    password: str
+
+
+class TokenResponse(CamelModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    expires_in: int
+
+
+class RefreshRequest(CamelModel):
+    refresh_token: str
+
+
+class UserResponse(CamelModel):
+    user_id: str
+    email: str
+    created_at: datetime

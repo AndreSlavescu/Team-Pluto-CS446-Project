@@ -8,7 +8,12 @@ import com.pluto.app.data.model.CreateJobResponse
 import com.pluto.app.data.model.JobLog
 import com.pluto.app.data.model.JobProgress
 import com.pluto.app.data.model.JobStatusResponse
+import com.pluto.app.data.model.LoginRequest
+import com.pluto.app.data.model.RefreshRequest
+import com.pluto.app.data.model.RegisterRequest
+import com.pluto.app.data.model.TokenResponse
 import com.pluto.app.data.model.UploadResponse
+import com.pluto.app.data.model.UserResponse
 import kotlinx.coroutines.delay
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
@@ -24,6 +29,46 @@ class FakePlutoApiService : PlutoApiService {
     private val pollCounts = ConcurrentHashMap<String, Int>()
     private val jobToApp = ConcurrentHashMap<String, String>()
     private val appToName = ConcurrentHashMap<String, String>()
+
+    private val mockToken =
+        TokenResponse(
+            accessToken = "mock-access-token",
+            refreshToken = "mock-refresh-token",
+            tokenType = "bearer",
+            expiresIn = 1800,
+        )
+
+    override suspend fun register(request: RegisterRequest): TokenResponse {
+        delay(200)
+        return mockToken
+    }
+
+    override suspend fun login(request: LoginRequest): TokenResponse {
+        delay(200)
+        return mockToken
+    }
+
+    override suspend fun refreshToken(request: RefreshRequest): TokenResponse {
+        delay(100)
+        return mockToken
+    }
+
+    override suspend fun logout(request: RefreshRequest) {
+        delay(100)
+    }
+
+    override suspend fun getMe(): UserResponse {
+        delay(100)
+        return UserResponse(
+            userId = "mock-user-id",
+            email = "mock@example.com",
+            createdAt = Instant.now().toString(),
+        )
+    }
+
+    override suspend fun deleteAccount() {
+        delay(200)
+    }
 
     override suspend fun createGenerationJob(request: CreateJobRequest): CreateJobResponse {
         delay(350)

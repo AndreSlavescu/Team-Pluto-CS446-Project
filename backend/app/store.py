@@ -87,13 +87,14 @@ class DataStore:
     def get_upload(self, upload_id: str) -> Optional[Dict[str, Any]]:
         return self._state["uploads"].get(upload_id)
 
-    def create_app(self) -> Dict[str, Any]:
+    def create_app(self, *, owner_id: str | None = None) -> Dict[str, Any]:
         app_id = self._new_id("app")
         record = {
             "appId": app_id,
             "createdAt": _iso(_now()),
             "versionIds": [],
             "latestVersionId": None,
+            "ownerId": owner_id,
         }
         with self._lock:
             self._state["apps"][app_id] = record

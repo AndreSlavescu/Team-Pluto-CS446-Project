@@ -30,10 +30,16 @@ android {
             buildConfigField("boolean", "USE_DEFAULT_APPS", "false")
         }
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
             buildConfigField("String", "API_BASE_URL", "\"https://team-pluto-cs446-project-production.up.railway.app\"")
             buildConfigField("boolean", "USE_MOCK_API", "false")
             buildConfigField("boolean", "USE_DEFAULT_APPS", "false")
+            // TODO: Replace with a proper release signing config before Play Store submission
             signingConfig = signingConfigs.getByName("debug")
         }
     }
@@ -75,7 +81,7 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
-    implementation("io.coil-kt:coil-compose:2.7.0")
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
 }

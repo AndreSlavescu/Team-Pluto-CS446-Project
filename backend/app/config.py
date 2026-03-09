@@ -24,6 +24,12 @@ MAX_PROMPT_CHARS = int(os.getenv("MAX_PROMPT_CHARS", "280"))
 
 DEFAULT_MAX_GENERATION_SECONDS = int(os.getenv("DEFAULT_MAX_GENERATION_SECONDS", "240"))
 
+DATABASE_URL = os.getenv("DATABASE_PUBLIC_URL", "")
+
+JWT_SECRET = os.getenv("JWT_SECRET", "")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "30"))
+
 ALLOWED_ORIGINS = [
     origin.strip()
     for origin in os.getenv("ALLOWED_ORIGINS", "").split(",")

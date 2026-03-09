@@ -13,12 +13,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.pluto.app.ui.screens.imageprompt.ImagePromptScreen
+import com.pluto.app.data.auth.TokenStore
+import com.pluto.app.ui.screens.auth.AuthScreen
 import com.pluto.app.ui.screens.generation.GenerationScreen
 import com.pluto.app.ui.screens.myapps.AppsScreen
 import com.pluto.app.ui.screens.myapps.AppsViewModel
 import com.pluto.app.ui.screens.preview.PreviewScreen
 import com.pluto.app.ui.screens.prompt.PromptScreen
+import com.pluto.app.ui.screens.settings.SettingsScreen
 import org.json.JSONArray
 import java.io.File
 
@@ -30,10 +32,14 @@ fun PlutoNavGraph(
     val navController = rememberNavController()
     val context = LocalContext.current
     val appsViewModel: AppsViewModel = viewModel()
-    
-    // Default to image-prompt for new users, apps list for returning users.
-    val startDestination = if (forceOpenApps || hasExistingApps(context)) "apps" else "image-prompt"
-    
+    val startDestination =
+        if (!TokenStore.isLoggedIn()) {
+            "auth"
+        } else if (forceOpenApps || hasExistingApps(context)) {
+            "apps"
+        } else {
+            "prompt"
+        }
     var hasHandledInitialAppOpen by remember { mutableStateOf(false) }
 
     LaunchedEffect(initialOpenAppId, hasHandledInitialAppOpen) {
@@ -47,40 +53,47 @@ fun PlutoNavGraph(
         navController = navController,
         startDestination = startDestination,
     ) {
-        // Main creation entry point
-        composable("image-prompt") {
-            ImagePromptScreen(
+        composable("auth") {
+            AuthScreen(
+                onAuthSuccess = {
+                    navController.navigate("prompt") {
+                        popUpTo("auth") { inclusive = true }
+                    }
+                },
+            )
+        }
+
+        composable("prompt") {
+            PromptScreen(
                 onJobCreated = { jobId, appId ->
                     navController.navigate("generation/$jobId/$appId")
                 },
                 onOpenApps = {
                     navController.navigate("apps")
                 },
-                onBack = {
-                    navController.popBackStack()
-                }
+                onOpenSettings = {
+                    navController.navigate("settings")
+                },
             )
         }
 
-        // Standard refinement / edit route
         composable(
-            route = "prompt?initialPrompt={initialPrompt}&editAppId={editAppId}",
-            arguments = listOf(
-                navArgument("initialPrompt") {
-                    type = NavType.StringType
-                    nullable = true
-                    defaultValue = null
-                },
-                navArgument("editAppId") {
-                    type = NavType.StringType
-                    nullable = true
-                    defaultValue = null
-                }
-            )
-        ) {
+            route = "prompt?editAppId={editAppId}",
+            arguments =
+                listOf(
+                    navArgument("editAppId") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                ),
+        ) { backStackEntry ->
+            val editAppId = backStackEntry.arguments?.getString("editAppId")
             PromptScreen(
                 onJobCreated = { jobId, appId ->
-                    navController.navigate("generation/$jobId/$appId")
+                    navController.navigate("generation/$jobId/$appId") {
+                        popUpTo("prompt?editAppId=$editAppId") { inclusive = true }
+                    }
                 },
                 onOpenApps = {
                     navController.navigate("apps")
@@ -93,20 +106,24 @@ fun PlutoNavGraph(
 
         composable(
             route = "generation/{jobId}/{appId}",
-            arguments = listOf(
-                navArgument("jobId") { type = NavType.StringType },
-                navArgument("appId") { type = NavType.StringType },
-            ),
+            arguments =
+                listOf(
+                    navArgument("jobId") { type = NavType.StringType },
+                    navArgument("appId") { type = NavType.StringType },
+                ),
         ) {
             GenerationScreen(
                 onComplete = { appId ->
                     appsViewModel.registerGeneratedApp(appId = appId)
                     navController.navigate("preview/$appId") {
-                        popUpTo("apps") { inclusive = false }
+                        popUpTo("prompt") { inclusive = false }
                     }
                 },
                 onError = {
-                    navController.popBackStack()
+                    navController.popBackStack(
+                        "prompt",
+                        inclusive = false,
+                    )
                 },
             )
         }
@@ -118,7 +135,15 @@ fun PlutoNavGraph(
             val appId = backStackEntry.arguments?.getString("appId") ?: ""
             PreviewScreen(
                 onBack = {
-                    navController.popBackStack()
+                    val previousRoute = navController.previousBackStackEntry?.destination?.route
+                    if (previousRoute == "apps") {
+                        navController.popBackStack()
+                    } else {
+                        navController.popBackStack(
+                            "prompt",
+                            inclusive = false,
+                        )
+                    }
                 },
                 onOpenApps = {
                     navController.navigate("apps")
@@ -137,8 +162,20 @@ fun PlutoNavGraph(
                 onEditApp = { appId ->
                     navController.navigate("prompt?editAppId=$appId")
                 },
-                onCreateApps = { 
-                    navController.navigate("image-prompt") 
+                onCreateApps = { navController.navigate("prompt") },
+                onOpenSettings = {
+                    navController.navigate("settings")
+                },
+            )
+        }
+
+        composable(route = "settings") {
+            SettingsScreen(
+                onBack = { navController.popBackStack() },
+                onLoggedOut = {
+                    navController.navigate("auth") {
+                        popUpTo(0) { inclusive = true }
+                    }
                 },
             )
         }
