@@ -58,6 +58,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.pluto.app.R
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ImagePromptScreen(
@@ -82,8 +83,8 @@ fun ImagePromptScreen(
     }
 
     LaunchedEffect(jobResult) {
-        jobResult?.let {
-            onJobCreated(it.jobId, it.appId)
+        jobResult?.let { result ->
+            onJobCreated(result.jobId, result.appId)
             viewModel.resetJobResult()
         }
     }
