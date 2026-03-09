@@ -78,8 +78,6 @@ class ImagePromptViewModel(
                 }
 
                 // Step 2: Trigger the actual app generation
-                // We send both the text prompt AND the image IDs directly to the creation job.
-                // The backend generator is already configured to handle both together.
                 val result = if (isEditMode) {
                     val htmlFile = File(getApplication<Application>().filesDir, "saved_apps/$editAppId/index.html")
                     val currentHtml = if (htmlFile.exists()) htmlFile.readText() else ""
