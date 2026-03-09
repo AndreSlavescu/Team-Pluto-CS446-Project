@@ -199,7 +199,7 @@ fun ImagePromptScreen(
                         if (isEditMode) {
                             "Add a dark mode toggle..."
                         } else if (selectedImages.isEmpty()) {
-                            "Describe what would you like to build"
+                            "Describe what you would like to build"
                         } else {
                             "Describe them if you like"
                         }
