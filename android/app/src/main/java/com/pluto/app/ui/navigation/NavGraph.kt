@@ -13,6 +13,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.pluto.app.ui.screens.imageprompt.ImagePromptScreen
 import com.pluto.app.ui.screens.generation.GenerationScreen
 import com.pluto.app.ui.screens.myapps.AppsScreen
 import com.pluto.app.ui.screens.myapps.AppsViewModel
@@ -29,7 +30,10 @@ fun PlutoNavGraph(
     val navController = rememberNavController()
     val context = LocalContext.current
     val appsViewModel: AppsViewModel = viewModel()
-    val startDestination = if (forceOpenApps || hasExistingApps(context)) "apps" else "prompt"
+    
+    // Default to image-prompt for new users, apps list for returning users.
+    val startDestination = if (forceOpenApps || hasExistingApps(context)) "apps" else "image-prompt"
+    
     var hasHandledInitialAppOpen by remember { mutableStateOf(false) }
 
     LaunchedEffect(initialOpenAppId, hasHandledInitialAppOpen) {
@@ -43,34 +47,40 @@ fun PlutoNavGraph(
         navController = navController,
         startDestination = startDestination,
     ) {
-        composable("prompt") {
-            PromptScreen(
+        // Main creation entry point
+        composable("image-prompt") {
+            ImagePromptScreen(
                 onJobCreated = { jobId, appId ->
                     navController.navigate("generation/$jobId/$appId")
                 },
                 onOpenApps = {
                     navController.navigate("apps")
                 },
+                onBack = {
+                    navController.popBackStack()
+                }
             )
         }
 
+        // Standard refinement / edit route
         composable(
-            route = "prompt?editAppId={editAppId}",
-            arguments =
-                listOf(
-                    navArgument("editAppId") {
-                        type = NavType.StringType
-                        nullable = true
-                        defaultValue = null
-                    },
-                ),
-        ) { backStackEntry ->
-            val editAppId = backStackEntry.arguments?.getString("editAppId")
+            route = "prompt?initialPrompt={initialPrompt}&editAppId={editAppId}",
+            arguments = listOf(
+                navArgument("initialPrompt") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+                navArgument("editAppId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) {
             PromptScreen(
                 onJobCreated = { jobId, appId ->
-                    navController.navigate("generation/$jobId/$appId") {
-                        popUpTo("prompt?editAppId=$editAppId") { inclusive = true }
-                    }
+                    navController.navigate("generation/$jobId/$appId")
                 },
                 onOpenApps = {
                     navController.navigate("apps")
@@ -83,24 +93,20 @@ fun PlutoNavGraph(
 
         composable(
             route = "generation/{jobId}/{appId}",
-            arguments =
-                listOf(
-                    navArgument("jobId") { type = NavType.StringType },
-                    navArgument("appId") { type = NavType.StringType },
-                ),
+            arguments = listOf(
+                navArgument("jobId") { type = NavType.StringType },
+                navArgument("appId") { type = NavType.StringType },
+            ),
         ) {
             GenerationScreen(
                 onComplete = { appId ->
                     appsViewModel.registerGeneratedApp(appId = appId)
                     navController.navigate("preview/$appId") {
-                        popUpTo("prompt") { inclusive = false }
+                        popUpTo("apps") { inclusive = false }
                     }
                 },
                 onError = {
-                    navController.popBackStack(
-                        "prompt",
-                        inclusive = false,
-                    )
+                    navController.popBackStack()
                 },
             )
         }
@@ -112,15 +118,7 @@ fun PlutoNavGraph(
             val appId = backStackEntry.arguments?.getString("appId") ?: ""
             PreviewScreen(
                 onBack = {
-                    val previousRoute = navController.previousBackStackEntry?.destination?.route
-                    if (previousRoute == "apps") {
-                        navController.popBackStack()
-                    } else {
-                        navController.popBackStack(
-                            "prompt",
-                            inclusive = false,
-                        )
-                    }
+                    navController.popBackStack()
                 },
                 onOpenApps = {
                     navController.navigate("apps")
@@ -139,7 +137,9 @@ fun PlutoNavGraph(
                 onEditApp = { appId ->
                     navController.navigate("prompt?editAppId=$appId")
                 },
-                onCreateApps = { navController.navigate("prompt") },
+                onCreateApps = { 
+                    navController.navigate("image-prompt") 
+                },
             )
         }
     }

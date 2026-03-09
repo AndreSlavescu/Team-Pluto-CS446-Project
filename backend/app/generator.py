@@ -116,10 +116,18 @@ def _parse_json(text: str) -> Optional[Dict[str, Any]]:
 
 def _generate_html_app(
     blueprint: Dict[str, Any],
-    prompt: str,
+    original_content: List[Dict[str, Any]],
     client: OpenAI,
 ) -> Optional[str]:
     blueprint_text = json.dumps(blueprint, indent=2)
+    
+    # Merge the blueprint context into the user input list
+    user_input = list(original_content)
+    user_input.append({
+        "type": "input_text", 
+        "text": f"\n\nBlueprint for implementation:\n{blueprint_text}"
+    })
+
     try:
         response = client.responses.create(
             model=config.OPENAI_MODEL,
@@ -130,12 +138,7 @@ def _generate_html_app(
                 },
                 {
                     "role": "user",
-                    "content": [
-                        {
-                            "type": "input_text",
-                            "text": f"Original prompt: {prompt}\n\nBlueprint:\n{blueprint_text}",
-                        }
-                    ],
+                    "content": user_input,
                 },
             ],
             max_output_tokens=65536,
@@ -579,7 +582,7 @@ def run_generation_job(store: DataStore, job_id: str) -> None:
                 blueprint, prompt, base_template, client
             )
         else:
-            html_content = _generate_html_app(blueprint, prompt, client)
+            html_content = _generate_html_app(blueprint, content, client)
         if html_content is None:
             store.update_job(
                 job_id,

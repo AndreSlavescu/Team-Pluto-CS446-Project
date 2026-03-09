@@ -42,4 +42,18 @@ interface PlutoApiService {
     suspend fun uploadFile(
         @Part file: MultipartBody.Part,
     ): UploadResponse
+
+    @POST("v1/analyze-images")
+    suspend fun analyzeImages(
+        @Body request: AnalyzeImagesRequest,
+    ): AnalyzeImagesResponse
 }
+
+data class AnalyzeImagesRequest(
+    val imageIds: List<String>,
+    val userPrompt: String,
+)
+
+data class AnalyzeImagesResponse(
+    val analysis: String,
+)
