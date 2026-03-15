@@ -106,7 +106,7 @@ def _parse_json(text: str) -> Optional[Dict[str, Any]]:
     start = text.find("{")
     end = text.rfind("}")
     if start != -1 and end != -1 and end > start:
-        snippet = text[start : end + 1]
+        snippet = text[start: end + 1]
         try:
             return json.loads(snippet)
         except json.JSONDecodeError:
