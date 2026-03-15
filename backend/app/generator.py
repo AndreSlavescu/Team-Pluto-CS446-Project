@@ -106,7 +106,7 @@ def _parse_json(text: str) -> Optional[Dict[str, Any]]:
     start = text.find("{")
     end = text.rfind("}")
     if start != -1 and end != -1 and end > start:
-        snippet = text[start : end + 1]
+        snippet = text[start: end + 1]
         try:
             return json.loads(snippet)
         except json.JSONDecodeError:
@@ -115,9 +115,9 @@ def _parse_json(text: str) -> Optional[Dict[str, Any]]:
 
 
 def _generate_html_app(
-    blueprint: Dict[str, Any],
-    prompt: str,
-    client: OpenAI,
+        blueprint: Dict[str, Any],
+        prompt: str,
+        client: OpenAI,
 ) -> Optional[str]:
     blueprint_text = json.dumps(blueprint, indent=2)
     try:
@@ -159,9 +159,9 @@ def _validate_html(html: str) -> bool:
 
 
 def _generate_edit_blueprint(
-    existing_html: str,
-    change_request: str,
-    client: OpenAI,
+        existing_html: str,
+        change_request: str,
+        client: OpenAI,
 ) -> Optional[Dict[str, Any]]:
     try:
         response = client.responses.create(
@@ -194,10 +194,10 @@ def _generate_edit_blueprint(
 
 
 def _generate_edited_html_app(
-    blueprint: Dict[str, Any],
-    change_request: str,
-    existing_html: str,
-    client: OpenAI,
+        blueprint: Dict[str, Any],
+        change_request: str,
+        existing_html: str,
+        client: OpenAI,
 ) -> Optional[str]:
     blueprint_text = json.dumps(blueprint, indent=2)
     try:
@@ -257,10 +257,10 @@ def _build_manifest(prompt: str, blueprint: Optional[Dict[str, Any]]) -> Dict[st
 
 
 def _create_project_bundle(
-    target_dir: Path,
-    prompt: str,
-    blueprint: Optional[Dict[str, Any]],
-    html_content: Optional[str] = None,
+        target_dir: Path,
+        prompt: str,
+        blueprint: Optional[Dict[str, Any]],
+        html_content: Optional[str] = None,
 ) -> None:
     target_dir.mkdir(parents=True, exist_ok=True)
     (target_dir / "README.md").write_text(
@@ -458,7 +458,7 @@ def run_generation_job(store: DataStore, job_id: str) -> None:
     input_images = request.get("inputImages") or []
 
     max_seconds = (
-        constraints.get("maxGenerationSeconds") or config.DEFAULT_MAX_GENERATION_SECONDS
+            constraints.get("maxGenerationSeconds") or config.DEFAULT_MAX_GENERATION_SECONDS
     )
     started_at = time.monotonic()
 

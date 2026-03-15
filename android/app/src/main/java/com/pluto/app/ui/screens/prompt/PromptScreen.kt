@@ -75,7 +75,7 @@ fun PromptScreen(
                     )
                 },
                 navigationIcon = {
-                    if (isEditMode && onBack != null) {
+                    if (onBack != null) {
                         IconButton(onClick = onBack) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
@@ -164,29 +164,6 @@ fun PromptScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            val isPromptTooLong = prompt.length > 280
-            Text(
-                text = "${prompt.length}/280",
-                style = MaterialTheme.typography.bodySmall,
-                color =
-                    if (isPromptTooLong) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-                modifier = Modifier.align(Alignment.End),
-            )
-
-            if (isPromptTooLong) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Prompt is too long (max 280 characters)",
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.align(Alignment.End),
-                )
-            }
-
             error?.let { errorMsg ->
                 Spacer(modifier = Modifier.height(8.dp))
                 Card(
@@ -217,7 +194,7 @@ fun PromptScreen(
             Button(
                 onClick = viewModel::submitPrompt,
                 modifier = Modifier.fillMaxWidth().height(56.dp),
-                enabled = prompt.isNotBlank() && !isLoading && !isPromptTooLong,
+                enabled = prompt.isNotBlank() && !isLoading,
                 shape = RoundedCornerShape(16.dp),
                 colors =
                     ButtonDefaults.buttonColors(

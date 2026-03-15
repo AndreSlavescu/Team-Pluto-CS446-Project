@@ -1,14 +1,22 @@
 package com.pluto.app.data.repository
 
+import android.content.Context
+import android.net.Uri
+import com.pluto.app.data.api.AnalyzeImagesRequest
 import com.pluto.app.data.api.ApiClient
 import com.pluto.app.data.api.PlutoApiService
 import com.pluto.app.data.model.AppVersionResponse
 import com.pluto.app.data.model.CreateJobRequest
 import com.pluto.app.data.model.CreateJobResponse
 import com.pluto.app.data.model.JobStatusResponse
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.ResponseBody
 import org.json.JSONObject
 import retrofit2.HttpException
+import java.io.File
+import java.io.FileOutputStream
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
@@ -19,7 +27,6 @@ class AppRepository(
     companion object {
         fun extractErrorMessage(e: Throwable): String {
             if (e is HttpException) {
-                // Try to parse FastAPI's {"detail": {"code": "...", "message": "..."}}
                 try {
                     val body = e.response()?.errorBody()?.string()
                     if (body != null) {
@@ -29,13 +36,10 @@ class AppRepository(
                             val message = detail.optString("message", "")
                             if (message.isNotBlank()) return message
                         }
-                        // FastAPI sometimes returns {"detail": "string"}
                         val detailStr = json.optString("detail", "")
                         if (detailStr.isNotBlank()) return detailStr
                     }
-                } catch (_: Exception) {
-                    // fall through to status-based message
-                }
+                } catch (_: Exception) { }
 
                 return when (e.code()) {
                     400 -> "Invalid request. Please check your input and try again."
@@ -71,12 +75,14 @@ class AppRepository(
         appId: String,
         editPrompt: String,
         currentHtml: String,
+        imageIds: List<String> = emptyList(),
     ): CreateJobResponse {
         val request =
             CreateJobRequest(
                 prompt = editPrompt,
                 appId = appId,
                 baseTemplate = currentHtml,
+                inputImages = imageIds,
             )
         return api.createGenerationJob(request)
     }
@@ -91,5 +97,30 @@ class AppRepository(
 
     suspend fun downloadArtifact(artifactId: String): ResponseBody {
         return api.downloadArtifact(artifactId)
+    }
+
+    suspend fun uploadImage(context: Context, uri: Uri): String {
+        val file = uriToFile(context, uri)
+        val requestFile = file.asRequestBody("image/*".toMediaTypeOrNull())
+        val body = MultipartBody.Part.createFormData("file", file.name, requestFile)
+        val response = api.uploadFile(body)
+        return response.uploadId
+    }
+
+    suspend fun analyzeImages(imageIds: List<String>, userPrompt: String): String {
+        val response = api.analyzeImages(AnalyzeImagesRequest(imageIds, userPrompt))
+        return response.analysis
+    }
+
+    private fun uriToFile(context: Context, uri: Uri): File {
+        val inputStream = context.contentResolver.openInputStream(uri)
+        val tempFile = File(context.cacheDir, "upload_${System.currentTimeMillis()}.jpg")
+        val outputStream = FileOutputStream(tempFile)
+        inputStream?.use { input ->
+            outputStream.use { output ->
+                input.copyTo(output)
+            }
+        }
+        return tempFile
     }
 }
