@@ -178,6 +178,13 @@ class FakePlutoApiService : PlutoApiService {
         )
     }
 
+    override suspend fun analyzeImages(request: AnalyzeImagesRequest): AnalyzeImagesResponse {
+        delay(500)
+        return AnalyzeImagesResponse(
+            analysis = "This is a mock analysis generated from ${request.imageIds.size} images. It describes a professional dashboard app with real-time analytics, user management, and a dark mode interface. The layout includes a sidebar navigation and responsive data tables."
+        )
+    }
+
     private fun createPreviewZip(appName: String): ByteArray {
         val html =
             """

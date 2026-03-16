@@ -20,9 +20,11 @@ class PromptViewModel(
     private val repository = AppRepository()
 
     private val editAppId: String? = savedStateHandle["editAppId"]
-    val isEditMode: Boolean = editAppId != null
+    val isEditMode: Boolean = !editAppId.isNullOrBlank()
 
-    private val _prompt = MutableStateFlow("")
+    private val initialPrompt: String? = savedStateHandle["initialPrompt"]
+
+    private val _prompt = MutableStateFlow(initialPrompt ?: "")
     val prompt: StateFlow<String> = _prompt.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
