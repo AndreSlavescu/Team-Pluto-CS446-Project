@@ -37,6 +37,7 @@ from .auth import (
     hash_token,
     verify_password,
 )
+from .appdb_routes import router as appdb_router
 from .generator import run_generation_job
 from .models import (
     ApiError,
@@ -68,6 +69,7 @@ _RATE_LIMITS: Dict[str, tuple] = {
     "upload": (10, 60),
     "generation": (5, 60),
     "auth": (10, 60),
+    "db": (60, 60),
 }
 
 
@@ -117,10 +119,12 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 app.add_middleware(SecurityHeadersMiddleware)
+app.include_router(appdb_router)
+_WEBVIEW_ORIGIN = "https://plutoapp.local"
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=config.ALLOWED_ORIGINS,
-    allow_methods=["GET", "POST", "DELETE"],
+    allow_origins=config.ALLOWED_ORIGINS + [_WEBVIEW_ORIGIN],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["Content-Type", "Accept", "Authorization"],
 )
 

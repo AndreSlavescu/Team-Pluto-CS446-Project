@@ -41,6 +41,7 @@ class DataStore:
         config.UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
         config.ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
         config.WORK_DIR.mkdir(parents=True, exist_ok=True)
+        config.APPDB_DIR.mkdir(parents=True, exist_ok=True)
 
     def _load(self) -> None:
         if not self._state_path.exists():
