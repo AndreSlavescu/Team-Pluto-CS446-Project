@@ -35,3 +35,10 @@ ALLOWED_ORIGINS = [
     for origin in os.getenv("ALLOWED_ORIGINS", "").split(",")
     if origin.strip()
 ]
+
+# Per-app sandboxed database settings
+APPDB_DIR = Path(os.getenv("APPDB_DIR", DATA_DIR / "appdb"))
+APPDB_MAX_SIZE_MB = int(os.getenv("APPDB_MAX_SIZE_MB", "50"))
+APPDB_MAX_COLLECTIONS = int(os.getenv("APPDB_MAX_COLLECTIONS", "20"))
+APPDB_MAX_ITEMS = int(os.getenv("APPDB_MAX_ITEMS", "10000"))
+APPDB_MAX_ITEM_SIZE_BYTES = int(os.getenv("APPDB_MAX_ITEM_SIZE_BYTES", "65536"))
