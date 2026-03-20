@@ -48,35 +48,98 @@ Return ONLY valid JSON (no markdown) with this schema:
 Keep values short and practical.
 """.strip()
 
-EDIT_HTML_SYSTEM_PROMPT = """
+APPDB_JS_HELPER = """
+A backend data API is available for persistent, cross-device data storage. Embed this helper in a <script> block:
+
+const AppDB = {
+  _base: '{{BACKEND_URL}}/v1/apps/{{APP_ID}}/db',
+  _token: localStorage.getItem('pluto_token'),
+  _headers() {
+    const h = {'Content-Type': 'application/json'};
+    if (this._token) h['Authorization'] = 'Bearer ' + this._token;
+    return h;
+  },
+  async list(collection, params) {
+    const qs = params ? new URLSearchParams(params).toString() : '';
+    const r = await fetch(this._base + '/' + collection + (qs ? '?' + qs : ''), {headers: this._headers()});
+    if (!r.ok) throw new Error('AppDB list failed: ' + r.status);
+    return (await r.json()).items;
+  },
+  async get(collection, id) {
+    const r = await fetch(this._base + '/' + collection + '/' + id, {headers: this._headers()});
+    if (!r.ok) throw new Error('AppDB get failed: ' + r.status);
+    return r.json();
+  },
+  async create(collection, data) {
+    const r = await fetch(this._base + '/' + collection, {
+      method: 'POST', headers: this._headers(), body: JSON.stringify({data})
+    });
+    if (!r.ok) throw new Error('AppDB create failed: ' + r.status);
+    return r.json();
+  },
+  async update(collection, id, data) {
+    const r = await fetch(this._base + '/' + collection + '/' + id, {
+      method: 'PUT', headers: this._headers(), body: JSON.stringify({data})
+    });
+    if (!r.ok) throw new Error('AppDB update failed: ' + r.status);
+    return r.json();
+  },
+  async delete(collection, id) {
+    const r = await fetch(this._base + '/' + collection + '/' + id, {
+      method: 'DELETE', headers: this._headers()
+    });
+    if (!r.ok) throw new Error('AppDB delete failed: ' + r.status);
+    return r.json();
+  }
+};
+
+Use AppDB for data that should persist across devices or be shared between users (e.g. todo items, posts, scores).
+Use localStorage only for client-only preferences (e.g. theme, last viewed tab).
+Collections are created automatically on first write. Collection names must be lowercase a-z, digits, underscores (e.g. "todos", "user_scores").
+The {{BACKEND_URL}} and {{APP_ID}} placeholders will be replaced automatically — use them exactly as shown.
+""".strip()
+
+EDIT_HTML_SYSTEM_PROMPT = (
+    """
 You are an expert mobile web developer. You are given the HTML source of an existing app, an updated blueprint, and the user's change request.
 Modify the existing HTML to implement the requested changes while preserving all untouched functionality.
 
 Requirements:
 - Single HTML file with all CSS and JavaScript inlined — no external files, no CDN links
 - Mobile-first responsive layout optimised for 360-480 px width
-- Every feature in the blueprint must actually work — use localStorage for persistence where needed
+- Every feature in the blueprint must actually work
 - All buttons and forms must do something — no placeholders, no "coming soon"
 - Clean modern dark UI: background #0e0f12, cards #1a1d24, accent #3bd6c6, text #f4f7ff
 - Preserve existing functionality that is NOT affected by the change request
 - No lorem ipsum, no sample data that isn't meaningful
 
-Return ONLY the raw HTML starting with <!doctype html>. No markdown fences, no explanation.
-""".strip()
+"""
+    + APPDB_JS_HELPER
+    + """
 
-APP_GEN_SYSTEM_PROMPT = """
+Return ONLY the raw HTML starting with <!doctype html>. No markdown fences, no explanation.
+"""
+).strip()
+
+APP_GEN_SYSTEM_PROMPT = (
+    """
 You are an expert mobile web developer. Generate a complete, self-contained single-file HTML app from the blueprint and original prompt below.
 
 Requirements:
 - Single HTML file with all CSS and JavaScript inlined — no external files, no CDN links
 - Mobile-first responsive layout optimised for 360-480 px width
-- Every feature in the blueprint must actually work — use localStorage for persistence where needed
+- Every feature in the blueprint must actually work
 - All buttons and forms must do something — no placeholders, no "coming soon"
 - Clean modern dark UI: background #0e0f12, cards #1a1d24, accent #3bd6c6, text #f4f7ff
 - No lorem ipsum, no sample data that isn't meaningful
 
+"""
+    + APPDB_JS_HELPER
+    + """
+
 Return ONLY the raw HTML starting with <!doctype html>. No markdown fences, no explanation.
-""".strip()
+"""
+).strip()
 
 
 def _slugify(value: str) -> str:
@@ -114,10 +177,19 @@ def _parse_json(text: str) -> Optional[Dict[str, Any]]:
     return None
 
 
+def _inject_app_backend_url(html: str, app_id: str) -> str:
+    """Replace backend URL and app ID placeholders in generated HTML."""
+    base_url = config.PUBLIC_BASE_URL.rstrip("/")
+    html = html.replace("{{BACKEND_URL}}", base_url)
+    html = html.replace("{{APP_ID}}", app_id)
+    return html
+
+
 def _generate_html_app(
     blueprint: Dict[str, Any],
     prompt: str,
     client: OpenAI,
+    app_id: str = "",
 ) -> Optional[str]:
     blueprint_text = json.dumps(blueprint, indent=2)
     try:
@@ -140,7 +212,10 @@ def _generate_html_app(
             ],
             max_output_tokens=65536,
         )
-        return response.output_text
+        html = response.output_text
+        if html and app_id:
+            html = _inject_app_backend_url(html, app_id)
+        return html
     except Exception:
         logger.exception("HTML app generation failed")
         return None
@@ -198,6 +273,7 @@ def _generate_edited_html_app(
     change_request: str,
     existing_html: str,
     client: OpenAI,
+    app_id: str = "",
 ) -> Optional[str]:
     blueprint_text = json.dumps(blueprint, indent=2)
     try:
@@ -226,7 +302,10 @@ def _generate_edited_html_app(
             ],
             max_output_tokens=65536,
         )
-        return response.output_text
+        html = response.output_text
+        if html and app_id:
+            html = _inject_app_backend_url(html, app_id)
+        return html
     except Exception:
         return None
 
@@ -576,10 +655,12 @@ def run_generation_job(store: DataStore, job_id: str) -> None:
         )
         if is_edit:
             html_content = _generate_edited_html_app(
-                blueprint, prompt, base_template, client
+                blueprint, prompt, base_template, client, app_id=job["appId"]
             )
         else:
-            html_content = _generate_html_app(blueprint, prompt, client)
+            html_content = _generate_html_app(
+                blueprint, prompt, client, app_id=job["appId"]
+            )
         if html_content is None:
             store.update_job(
                 job_id,

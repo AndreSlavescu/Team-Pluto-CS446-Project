@@ -1,6 +1,9 @@
 package com.pluto.app.ui.screens.preview
 
+import android.net.Uri
 import android.view.ViewGroup
+import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.layout.Box
@@ -40,6 +43,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.webkit.WebViewAssetLoader
+import com.pluto.app.data.auth.TokenStore
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -155,6 +160,7 @@ fun PreviewScreen(
                 }
 
                 previewPath != null -> {
+                    val appId = viewModel.appId
                     AndroidView(
                         factory = { ctx ->
                             WebView(ctx).apply {
@@ -163,13 +169,57 @@ fun PreviewScreen(
                                         ViewGroup.LayoutParams.MATCH_PARENT,
                                         ViewGroup.LayoutParams.MATCH_PARENT,
                                     )
-                                webViewClient = WebViewClient()
+
+                                // Use WebViewAssetLoader to serve local files from a virtual
+                                // HTTPS origin. This allows the generated app's fetch() calls
+                                // to reach the backend (file:// blocks cross-origin requests).
+                                val assetLoader =
+                                    WebViewAssetLoader.Builder()
+                                        .setDomain("plutoapp.local")
+                                        .addPathHandler(
+                                            "/",
+                                            WebViewAssetLoader.InternalStoragePathHandler(
+                                                ctx,
+                                                ctx.filesDir,
+                                            ),
+                                        )
+                                        .build()
+
+                                webViewClient =
+                                    object : WebViewClient() {
+                                        override fun shouldInterceptRequest(
+                                            view: WebView?,
+                                            request: WebResourceRequest?,
+                                        ): WebResourceResponse? {
+                                            return request?.url?.let { assetLoader.shouldInterceptRequest(it) }
+                                        }
+
+                                        override fun onPageFinished(
+                                            view: WebView?,
+                                            url: String?,
+                                        ) {
+                                            super.onPageFinished(view, url)
+                                            // Inject the JWT token into localStorage so the
+                                            // AppDB JS helper can authenticate with the backend.
+                                            val token = TokenStore.getAccessToken()
+                                            if (token != null) {
+                                                view?.evaluateJavascript(
+                                                    "localStorage.setItem('pluto_token', '$token');",
+                                                    null,
+                                                )
+                                            }
+                                        }
+                                    }
+
                                 settings.javaScriptEnabled = true
-                                settings.domStorageEnabled = true // Security: Restrict file access from file URLs
+                                settings.domStorageEnabled = true
                                 settings.allowFileAccess = true
                                 settings.allowFileAccessFromFileURLs = false
                                 settings.allowUniversalAccessFromFileURLs = false
-                                loadUrl("file://$previewPath")
+
+                                // Load via the virtual HTTPS origin
+                                val relativePath = "saved_apps/$appId/index.html"
+                                loadUrl("https://plutoapp.local/$relativePath")
                             }
                         },
                         modifier = Modifier.fillMaxSize(),
