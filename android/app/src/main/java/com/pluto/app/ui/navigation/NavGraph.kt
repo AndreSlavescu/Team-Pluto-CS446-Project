@@ -66,7 +66,16 @@ fun PlutoNavGraph(
             )
         }
 
-        composable("image-prompt") {
+        composable(
+            route = "image-prompt?editAppId={editAppId}",
+            arguments = listOf(
+                navArgument("editAppId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) {
             ImagePromptScreen(
                 onJobCreated = { jobId, appId ->
                     navController.navigate("generation/$jobId/$appId")
@@ -78,6 +87,13 @@ fun PlutoNavGraph(
                     navController.popBackStack()
                 }
             )
+        }
+
+        // Keep image-prompt without args for compatibility
+        composable("image-prompt") {
+            navController.navigate("image-prompt?editAppId=") {
+                popUpTo("image-prompt") { inclusive = true }
+            }
         }
 
         composable(
@@ -141,7 +157,8 @@ fun PlutoNavGraph(
                     navController.navigate("apps")
                 },
                 onEdit = {
-                    navController.navigate("prompt?editAppId=$appId")
+                    // CHANGED: Go to image-prompt for editing instead of prompt
+                    navController.navigate("image-prompt?editAppId=$appId")
                 },
             )
         }
@@ -152,7 +169,8 @@ fun PlutoNavGraph(
                     navController.navigate("preview/$appId")
                 },
                 onEditApp = { appId ->
-                    navController.navigate("prompt?editAppId=$appId")
+                    // CHANGED: Go to image-prompt for editing instead of prompt
+                    navController.navigate("image-prompt?editAppId=$appId")
                 },
                 onCreateApps = { navController.navigate("image-prompt") },
                 onOpenSettings = {
