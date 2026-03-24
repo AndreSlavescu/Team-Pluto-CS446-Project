@@ -143,22 +143,23 @@ fun ImagePromptScreen(
         ) {
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Logo in the middle
-            Image(
-                painter = painterResource(id = R.drawable.pluto),
-                contentDescription = "Pluto Logo",
-                modifier = Modifier
-                    .size(120.dp)
-                    .clip(CircleShape)
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
+            if (!isEditMode) {
+                // Logo in the middle (only in creation mode)
+                Image(
+                    painter = painterResource(id = R.drawable.pluto),
+                    contentDescription = "Pluto Logo",
+                    modifier = Modifier
+                        .size(120.dp)
+                        .clip(CircleShape)
+                )
+                Spacer(modifier = Modifier.height(32.dp))
+            }
 
             Text(
-                text = if (isEditMode) "Describe your changes" else "Add up to 3 images if you like",
+                text = if (isEditMode) "how would you like to change your app ?" else "Add up to 3 images if you like",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.align(Alignment.Start)
+                modifier = if (isEditMode) Modifier else Modifier.align(Alignment.Start)
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -203,7 +204,7 @@ fun ImagePromptScreen(
                 placeholder = {
                     Text(
                         if (isEditMode) {
-                            "Add a dark mode toggle..."
+                            "describe your edit to the app"
                         } else if (selectedImages.isEmpty()) {
                             "Describe what you would like to build"
                         } else {
