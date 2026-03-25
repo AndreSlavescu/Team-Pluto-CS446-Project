@@ -142,8 +142,7 @@ fun ImagePromptScreen(
                 .padding(horizontal = 24.dp)
                 .verticalScroll(scrollState)
                 .imePadding()
-                .navigationBarsPadding()
-            ,
+                .navigationBarsPadding(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Spacer(modifier = Modifier.height(24.dp))
