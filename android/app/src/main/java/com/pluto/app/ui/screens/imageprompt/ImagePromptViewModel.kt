@@ -22,6 +22,7 @@ class ImagePromptViewModel(
 ) : AndroidViewModel(application) {
     companion object {
         const val DESCRIPTION_REQUIRED_ERROR = "An app description is required."
+        const val CHANGES_REQUIRED_ERROR = "A description of changes is required."
         private const val PREFS_NAME = "my_apps_store"
         private const val KEY_SAVED_APPS = "saved_apps"
     }
@@ -73,7 +74,7 @@ class ImagePromptViewModel(
             _error.value = null
             try {
                 if (currentPrompt.isBlank()) {
-                    _error.value = DESCRIPTION_REQUIRED_ERROR
+                    _error.value = if (isEditMode) CHANGES_REQUIRED_ERROR else DESCRIPTION_REQUIRED_ERROR
                     return@launch
                 }
 
