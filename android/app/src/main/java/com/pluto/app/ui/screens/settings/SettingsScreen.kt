@@ -91,9 +91,9 @@ fun SettingsScreen(
             TopAppBar(
                 title = {
                     Text(
-                        "About",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.SemiBold,
+                        "Settings",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.primary,
                     )
                 },
                 navigationIcon = {

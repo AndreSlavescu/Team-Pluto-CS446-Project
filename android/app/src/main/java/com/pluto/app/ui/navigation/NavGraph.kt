@@ -20,7 +20,6 @@ import com.pluto.app.ui.screens.generation.GenerationScreen
 import com.pluto.app.ui.screens.myapps.AppsScreen
 import com.pluto.app.ui.screens.myapps.AppsViewModel
 import com.pluto.app.ui.screens.preview.PreviewScreen
-import com.pluto.app.ui.screens.prompt.PromptScreen
 import com.pluto.app.ui.screens.settings.SettingsScreen
 import org.json.JSONArray
 import java.io.File
@@ -97,33 +96,6 @@ fun PlutoNavGraph(
         }
 
         composable(
-            route = "prompt?editAppId={editAppId}",
-            arguments =
-                listOf(
-                    navArgument("editAppId") {
-                        type = NavType.StringType
-                        nullable = true
-                        defaultValue = null
-                    },
-                ),
-        ) { backStackEntry ->
-            val editAppId = backStackEntry.arguments?.getString("editAppId")
-            PromptScreen(
-                onJobCreated = { jobId, appId ->
-                    navController.navigate("generation/$jobId/$appId") {
-                        popUpTo("prompt?editAppId=$editAppId") { inclusive = true }
-                    }
-                },
-                onOpenApps = {
-                    navController.navigate("apps")
-                },
-                onBack = {
-                    navController.popBackStack()
-                },
-            )
-        }
-
-        composable(
             route = "generation/{jobId}/{appId}",
             arguments =
                 listOf(
@@ -157,7 +129,6 @@ fun PlutoNavGraph(
                     navController.navigate("apps")
                 },
                 onEdit = {
-                    // CHANGED: Go to image-prompt for editing instead of prompt
                     navController.navigate("image-prompt?editAppId=$appId")
                 },
             )
@@ -169,7 +140,6 @@ fun PlutoNavGraph(
                     navController.navigate("preview/$appId")
                 },
                 onEditApp = { appId ->
-                    // CHANGED: Go to image-prompt for editing instead of prompt
                     navController.navigate("image-prompt?editAppId=$appId")
                 },
                 onCreateApps = { navController.navigate("image-prompt") },
