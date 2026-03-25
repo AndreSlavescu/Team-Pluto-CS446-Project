@@ -29,7 +29,7 @@ class ImagePromptViewModel(
     private val repository = AppRepository()
 
     private val editAppId: String? = savedStateHandle["editAppId"]
-    val editAppName: String? = resolveEditAppName(editAppId)
+    val editAppName: String? by lazy { resolveEditAppName(editAppId) }
     val isEditMode: Boolean = !editAppId.isNullOrBlank()
 
     private val _prompt = MutableStateFlow("")
