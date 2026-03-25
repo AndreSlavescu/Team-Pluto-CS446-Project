@@ -1,5 +1,6 @@
 package com.pluto.app.ui.screens.imageprompt
 
+import android.content.Context
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -26,6 +27,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddAPhoto
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.Button
@@ -48,16 +50,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.pluto.app.R
+import java.io.File
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -65,23 +71,42 @@ import com.pluto.app.R
 fun ImagePromptScreen(
     onJobCreated: (jobId: String, appId: String) -> Unit,
     onOpenApps: () -> Unit,
-    onBack: (() -> Unit),
+    onBack: (() -> Unit)? = null,
     viewModel: ImagePromptViewModel = viewModel(),
 ) {
-    val prompt by viewModel.prompt.collectAsState()
+    val imageprompt by viewModel.imageprompt.collectAsState()
     val selectedImages by viewModel.selectedImages.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val jobResult by viewModel.jobResult.collectAsState()
     val isEditMode = viewModel.isEditMode
-    val editAppName = viewModel.editAppName
 
     val scrollState = rememberScrollState()
+    val context = LocalContext.current
+    val cameraImageUri = remember { mutableStateOf<Uri?>(null) }
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(3)
     ) { uris ->
         viewModel.addImages(uris)
+    }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success) {
+            cameraImageUri.value?.let { uri -> viewModel.addImages(listOf(uri)) }
+        }
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            val uri = createTempImageUri(context)
+            cameraImageUri.value = uri
+            cameraLauncher.launch(uri)
+        }
     }
 
     LaunchedEffect(jobResult) {
@@ -96,37 +121,35 @@ fun ImagePromptScreen(
             TopAppBar(
                 title = {
                     Text(
-                        if (isEditMode) {
-                            editAppName?.let { "Editing $it" } ?: "Edit App"
-                        } else {
-                            "Pluto"
-                        },
+                        if (isEditMode) "Edit App" else "Pluto",
                         style = MaterialTheme.typography.headlineMedium,
                         color = MaterialTheme.colorScheme.primary,
                     )
                 },
                 navigationIcon = {
-                    if (isEditMode) {
+                    if (onBack != null) {
                         IconButton(onClick = onBack) {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Back",
                             )
                         }
                     }
                 },
                 actions = {
-                    IconButton(
-                        onClick = onOpenApps,
-                        colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        ),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Home,
-                            contentDescription = "Apps",
-                        )
+                    if (!isEditMode) {
+                        IconButton(
+                            onClick = onOpenApps,
+                            colors = IconButtonDefaults.iconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            ),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Home,
+                                contentDescription = "My Apps",
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -147,37 +170,69 @@ fun ImagePromptScreen(
         ) {
             Spacer(modifier = Modifier.height(24.dp))
 
-            if (!isEditMode) {
-                // Logo in the middle (only in creation mode)
-                Image(
-                    painter = painterResource(id = R.drawable.pluto),
-                    contentDescription = "Pluto Logo",
-                    modifier = Modifier
-                        .size(120.dp)
-                        .clip(CircleShape)
-                )
-                Spacer(modifier = Modifier.height(32.dp))
-            }
-
-            Text(
-                text = if (isEditMode) "Describe your changes" else "Describe your app",
-                style = MaterialTheme.typography.headlineLarge,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = if (isEditMode) "What would you like to change?" else "What do you want to build?",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
+            Image(
+                painter = painterResource(id = R.drawable.pluto),
+                contentDescription = "Pluto Logo",
+                modifier = Modifier
+                    .size(120.dp)
+                    .clip(CircleShape)
             )
 
             Spacer(modifier = Modifier.height(32.dp))
 
+            Text(
+                text = if (isEditMode) "Describe your changes" else "Add up to 3 images if you like",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.align(Alignment.Start)
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Image Selection Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                selectedImages.forEach { uri ->
+                    SelectedImageItem(
+                        uri = uri, onRemove = { viewModel.removeImage(uri) })
+                }
+
+                if (selectedImages.size < 3) {
+                    AddImageButton(
+                        onClick = {
+                            launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(100.dp)
+                    )
+                }
+
+                if (selectedImages.size < 2) {
+                    CameraButton(
+                        onClick = {
+                            cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(100.dp)
+                    )
+                }
+
+                val usedSlots = selectedImages.size +
+                    (if (selectedImages.size < 3) 1 else 0) +
+                    (if (selectedImages.size < 2) 1 else 0)
+                repeat(maxOf(0, 3 - usedSlots)) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
             OutlinedTextField(
-                value = prompt,
+                value = imageprompt,
                 onValueChange = viewModel::updateImagePrompt,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -185,109 +240,23 @@ fun ImagePromptScreen(
                 placeholder = {
                     Text(
                         if (isEditMode) {
-                            "Add reminders for each todo..."
+                            "Add a dark mode toggle..."
+                        } else if (selectedImages.isEmpty()) {
+                            "Describe what you would like to build"
                         } else {
-                            "A todo app with categories and due dates..."
+                            "Describe them if you like"
                         }
                     )
                 },
                 shape = RoundedCornerShape(16.dp),
                 enabled = !isLoading,
-                isError = error == ImagePromptViewModel.DESCRIPTION_REQUIRED_ERROR,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant
-                )
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-
-            val firstRightPreview = selectedImages.getOrNull(0)
-            val secondRightPreview = selectedImages.getOrNull(1)
-            val leftSlotImageWhenFull = selectedImages.getOrNull(2)
-
-            // Image Selection Row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                if (leftSlotImageWhenFull != null) {
-                    SelectedImageItem(
-                        uri = leftSlotImageWhenFull,
-                        onRemove = { viewModel.removeImage(leftSlotImageWhenFull) },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(100.dp)
-                    )
-                } else {
-                    AddImageButton(
-                        onClick = {
-                            launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                        }, modifier = Modifier
-                            .weight(1f)
-                            .height(100.dp)
-                    )
-                }
-
-                if (firstRightPreview != null) {
-                    SelectedImageItem(
-                        uri = firstRightPreview,
-                        onRemove = { viewModel.removeImage(firstRightPreview) },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(100.dp)
-                    )
-                } else {
-                    EmptyImagePreview(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(100.dp)
-                    )
-                }
-
-                if (secondRightPreview != null) {
-                    SelectedImageItem(
-                        uri = secondRightPreview,
-                        onRemove = { viewModel.removeImage(secondRightPreview) },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(100.dp)
-                    )
-                } else {
-                    EmptyImagePreview(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(100.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Button(
-                onClick = viewModel::submitImagePrompt,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                enabled = !isLoading,
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant,
                 ),
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        strokeWidth = 2.dp,
-                    )
-                } else {
-                    Text(
-                        text = if (isEditMode) "Apply Changes" else "Generate App",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onPrimary,
-                    )
-                }
-            }
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
 
             error?.let { errorMsg ->
                 Spacer(modifier = Modifier.height(8.dp))
@@ -300,7 +269,7 @@ fun ImagePromptScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            text = "An error occurred",
+                            text = "Something went wrong",
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onErrorContainer,
                         )
@@ -312,10 +281,41 @@ fun ImagePromptScreen(
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(8.dp))
             }
 
-            // Extra spacer to allow scrolling past the button when keyboard is up
+            Spacer(modifier = Modifier.height(16.dp))
+
+            val hasText = imageprompt.isNotBlank()
+            val hasImages = selectedImages.isNotEmpty()
+
+            if (hasText || hasImages) {
+                Button(
+                    onClick = viewModel::submitImagePrompt,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    enabled = !isLoading,
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                    ),
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            strokeWidth = 2.dp,
+                        )
+                    } else {
+                        Text(
+                            text = if (isEditMode) "Apply Changes" else "Generate App",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                        )
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
@@ -327,6 +327,7 @@ fun SelectedImageItem(
 ) {
     Box(
         modifier = modifier
+            .size(100.dp)
             .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant)
     ) {
@@ -357,15 +358,6 @@ fun SelectedImageItem(
 }
 
 @Composable
-fun EmptyImagePreview(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-    )
-}
-
-@Composable
 fun AddImageButton(
     onClick: () -> Unit, modifier: Modifier = Modifier
 ) {
@@ -379,10 +371,45 @@ fun AddImageButton(
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(
                 imageVector = Icons.Default.AddAPhoto,
-                contentDescription = "Add photo to prompt.",
-                modifier = Modifier.size(32.dp),
+                contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                text = "Add",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary
             )
         }
     }
+}
+
+@Composable
+fun CameraButton(
+    onClick: () -> Unit, modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(
+                imageVector = Icons.Default.CameraAlt,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                text = "Camera",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
+}
+
+fun createTempImageUri(context: Context): Uri {
+    val file = File.createTempFile("camera_", ".jpg", context.cacheDir)
+    return FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
 }
