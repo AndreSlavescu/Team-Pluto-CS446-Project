@@ -194,11 +194,9 @@ fun ImagePromptScreen(
                 shape = RoundedCornerShape(16.dp),
                 enabled = !isLoading,
                 isError = error == ImagePromptViewModel.DESCRIPTION_REQUIRED_ERROR,
-                colors =  (
-                    OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant
                 )
             )
             Spacer(modifier = Modifier.height(24.dp))
