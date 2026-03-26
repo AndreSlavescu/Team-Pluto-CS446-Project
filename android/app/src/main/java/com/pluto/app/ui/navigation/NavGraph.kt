@@ -35,14 +35,21 @@ fun PlutoNavGraph(
         }
     val authSuccessDestination =
         if (!initialOpenAppId.isNullOrBlank()) {
-            "preview/$initialOpenAppId"
+            "preview/$initialOpenAppId?fromShortcut=true"
         } else {
             postAuthDestination
+        }
+    val startDestination =
+        if (!initialOpenAppId.isNullOrBlank()) {
+            // Home-screen app shortcuts should open directly without auth.
+            "preview/$initialOpenAppId?fromShortcut=true"
+        } else {
+            "auth"
         }
 
     NavHost(
         navController = navController,
-        startDestination = "auth",
+        startDestination = startDestination,
     ) {
         composable("auth") {
             AuthScreen(
@@ -106,11 +113,19 @@ fun PlutoNavGraph(
         }
 
         composable(
-            route = "preview/{appId}",
-            arguments = listOf(navArgument("appId") { type = NavType.StringType }),
+            route = "preview/{appId}?fromShortcut={fromShortcut}",
+            arguments = listOf(
+                navArgument("appId") { type = NavType.StringType },
+                navArgument("fromShortcut") {
+                    type = NavType.BoolType
+                    defaultValue = false
+                },
+            ),
         ) { backStackEntry ->
             val appId = backStackEntry.arguments?.getString("appId") ?: ""
+            val fromShortcut = backStackEntry.arguments?.getBoolean("fromShortcut") == true
             PreviewScreen(
+                hideQuickActions = fromShortcut,
                 onBack = {
                     navController.popBackStack()
                 },
