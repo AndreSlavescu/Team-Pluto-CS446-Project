@@ -3,6 +3,7 @@ package com.pluto.app.ui.screens.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pluto.app.data.auth.AuthRepository
+import com.pluto.app.data.auth.TokenStore
 import com.pluto.app.data.repository.AppRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -10,6 +11,10 @@ import kotlinx.coroutines.launch
 
 class AuthViewModel : ViewModel() {
     private val authRepo = AuthRepository()
+
+    private val _requiresBiometricUnlock =
+        MutableStateFlow(TokenStore.isLoggedIn() && TokenStore.isBiometricEnabled())
+    val requiresBiometricUnlock: StateFlow<Boolean> = _requiresBiometricUnlock
 
     private val _email = MutableStateFlow("")
     val email: StateFlow<String> = _email
@@ -45,6 +50,7 @@ class AuthViewModel : ViewModel() {
     }
 
     fun submit() {
+
         val emailVal = _email.value.trim()
         val passwordVal = _password.value
 
@@ -80,6 +86,16 @@ class AuthViewModel : ViewModel() {
                 _isLoading.value = false
             }
         }
+    }
+
+    fun onBiometricUnlockSuccess() {
+        _requiresBiometricUnlock.value = false
+        _error.value = null
+        _authSuccess.value = true
+    }
+
+    fun setBiometricError(message: String) {
+        _error.value = message
     }
 
     fun resetSuccess() {

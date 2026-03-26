@@ -1,5 +1,7 @@
 package com.pluto.app.ui.screens.settings
 
+import android.content.Context
+import androidx.biometric.BiometricManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -17,6 +19,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -34,6 +38,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.pluto.app.BuildConfig
@@ -47,9 +52,12 @@ fun SettingsScreen(
     onBack: () -> Unit,
     onLoggedOut: () -> Unit = {},
 ) {
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val authRepo = remember { AuthRepository() }
     val email = TokenStore.getEmail() ?: "Unknown"
+    val canUseBiometrics = remember(context) { isBiometricAvailable(context) }
+    var biometricEnabled by remember { mutableStateOf(TokenStore.isBiometricEnabled() && canUseBiometrics) }
     var showDeleteDialog by remember { mutableStateOf(false) }
 
     if (showDeleteDialog) {
@@ -144,7 +152,13 @@ fun SettingsScreen(
                 OutlinedButton(
                     onClick = {
                         scope.launch {
-                            authRepo.logout()
+                            try {
+                                authRepo.logout()
+                            } catch (_: Exception) {
+                                // Ensure local auth + biometric state is wiped on sign out.
+                                TokenStore.clearTokens()
+                            }
+                            biometricEnabled = false
                             onLoggedOut()
                         }
                     },
@@ -166,6 +180,36 @@ fun SettingsScreen(
                 ) {
                     Text("Delete Account")
                 }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            SectionCard("Security") {
+                Text(
+                    text = if (canUseBiometrics) {
+                        "Use your device biometrics to unlock your session."
+                    } else {
+                        "Biometric authentication is not available on this device."
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                FilterChip(
+                    selected = biometricEnabled,
+                    onClick = {
+                        if (!canUseBiometrics) return@FilterChip
+                        biometricEnabled = !biometricEnabled
+                        TokenStore.setBiometricEnabled(biometricEnabled)
+                    },
+                    enabled = canUseBiometrics,
+                    label = { Text("Enable biometric login") },
+                    colors =
+                        FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        ),
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -253,3 +297,10 @@ private val PRIVACY_POLICY_TEXT =
     Contact
     If you have questions about this policy, contact us at pluto-cs446@uwaterloo.ca.
     """.trimIndent()
+
+private fun isBiometricAvailable(context: Context): Boolean {
+    val biometricManager = BiometricManager.from(context)
+    return biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG) ==
+        BiometricManager.BIOMETRIC_SUCCESS
+}
+

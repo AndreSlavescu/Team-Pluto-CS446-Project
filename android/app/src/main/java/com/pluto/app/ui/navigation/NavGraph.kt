@@ -1,11 +1,6 @@
 package com.pluto.app.ui.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
@@ -13,7 +8,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.pluto.app.data.auth.TokenStore
 import com.pluto.app.ui.screens.auth.AuthScreen
 import com.pluto.app.ui.screens.imageprompt.ImagePromptScreen
 import com.pluto.app.ui.screens.generation.GenerationScreen
@@ -32,33 +26,28 @@ fun PlutoNavGraph(
     val navController = rememberNavController()
     val context = LocalContext.current
     val appsViewModel: AppsViewModel = viewModel()
-    
-    val startDestination =
-        if (!TokenStore.isLoggedIn()) {
-            "auth"
-        } else if (forceOpenApps || hasExistingApps(context)) {
+
+    val postAuthDestination =
+        if (forceOpenApps || hasExistingApps(context)) {
             "apps"
         } else {
             "image-prompt"
         }
-        
-    var hasHandledInitialAppOpen by remember { mutableStateOf(false) }
-
-    LaunchedEffect(initialOpenAppId, hasHandledInitialAppOpen) {
-        if (!hasHandledInitialAppOpen && !initialOpenAppId.isNullOrBlank()) {
-            hasHandledInitialAppOpen = true
-            navController.navigate("preview/$initialOpenAppId")
+    val authSuccessDestination =
+        if (!initialOpenAppId.isNullOrBlank()) {
+            "preview/$initialOpenAppId"
+        } else {
+            postAuthDestination
         }
-    }
 
     NavHost(
         navController = navController,
-        startDestination = startDestination,
+        startDestination = "auth",
     ) {
         composable("auth") {
             AuthScreen(
                 onAuthSuccess = {
-                    navController.navigate("image-prompt") {
+                    navController.navigate(authSuccessDestination) {
                         popUpTo("auth") { inclusive = true }
                     }
                 },

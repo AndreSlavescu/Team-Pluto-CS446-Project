@@ -83,6 +83,7 @@ dependencies {
 
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
     implementation("androidx.webkit:webkit:1.12.1")
+    implementation("androidx.biometric:biometric:1.2.0-alpha05")
     
     implementation("io.coil-kt:coil-compose:2.7.0")
 

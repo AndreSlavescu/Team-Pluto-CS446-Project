@@ -40,13 +40,13 @@ object ApiClient {
     private val tokenAuthenticator =
         Authenticator { _: Route?, response: Response ->
             if (response.request.header("X-Retry-Auth") != null) {
-                TokenStore.clearTokens()
+                TokenStore.clearSession()
                 return@Authenticator null
             }
 
             val refreshToken =
                 TokenStore.getRefreshToken() ?: run {
-                    TokenStore.clearTokens()
+                    TokenStore.clearSession()
                     return@Authenticator null
                 }
 
@@ -64,11 +64,11 @@ object ApiClient {
                         .header("X-Retry-Auth", "true")
                         .build()
                 } else {
-                    TokenStore.clearTokens()
+                    TokenStore.clearSession()
                     null
                 }
             } catch (_: Exception) {
-                TokenStore.clearTokens()
+                TokenStore.clearSession()
                 null
             }
         }

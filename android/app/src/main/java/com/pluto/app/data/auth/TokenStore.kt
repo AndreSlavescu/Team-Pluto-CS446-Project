@@ -10,6 +10,7 @@ object TokenStore {
     private const val KEY_ACCESS = "access_token"
     private const val KEY_REFRESH = "refresh_token"
     private const val KEY_EMAIL = "user_email"
+    private const val KEY_BIOMETRIC_ENABLED = "biometric_enabled"
 
     private lateinit var prefs: SharedPreferences
 
@@ -48,13 +49,24 @@ object TokenStore {
 
     fun getEmail(): String? = prefs.getString(KEY_EMAIL, null)
 
+    fun setBiometricEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_BIOMETRIC_ENABLED, enabled).apply()
+    }
+
+    fun isBiometricEnabled(): Boolean = prefs.getBoolean(KEY_BIOMETRIC_ENABLED, false)
+
     fun isLoggedIn(): Boolean = getAccessToken() != null
 
-    fun clearTokens() {
+    fun clearSession() {
         prefs.edit()
             .remove(KEY_ACCESS)
             .remove(KEY_REFRESH)
             .remove(KEY_EMAIL)
             .apply()
+    }
+
+    fun clearTokens() {
+        clearSession()
+        prefs.edit().remove(KEY_BIOMETRIC_ENABLED).apply()
     }
 }
