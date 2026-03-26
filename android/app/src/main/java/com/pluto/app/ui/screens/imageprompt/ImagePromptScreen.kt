@@ -1,9 +1,14 @@
 package com.pluto.app.ui.screens.imageprompt
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
 import android.net.Uri
+import androidx.compose.ui.platform.LocalContext
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -26,6 +31,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddAPhoto
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.Button
@@ -37,17 +43,22 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -56,8 +67,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.core.content.FileProvider
 import coil.compose.AsyncImage
 import com.pluto.app.R
+import java.io.File
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -77,11 +90,33 @@ fun ImagePromptScreen(
     val editAppName = viewModel.editAppName
 
     val scrollState = rememberScrollState()
+    val context = LocalContext.current
+    val cameraImageUri = remember { mutableStateOf<Uri?>(null) }
+    val showImageSourceSheet = remember { mutableStateOf(false) }
+    val imageSourceSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(3)
     ) { uris ->
         viewModel.addImages(uris)
+    }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success) {
+            cameraImageUri.value?.let { uri -> viewModel.addImages(listOf(uri)) }
+        }
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            val uri = createTempImageUri(context)
+            cameraImageUri.value = uri
+            cameraLauncher.launch(uri)
+        }
     }
 
     LaunchedEffect(jobResult) {
@@ -221,7 +256,7 @@ fun ImagePromptScreen(
                 } else {
                     AddImageButton(
                         onClick = {
-                            launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                            showImageSourceSheet.value = true
                         }, modifier = Modifier
                             .weight(1f)
                             .height(100.dp)
@@ -318,6 +353,63 @@ fun ImagePromptScreen(
             // Extra spacer to allow scrolling past the button when keyboard is up
             Spacer(modifier = Modifier.height(32.dp))
         }
+
+        if (showImageSourceSheet.value) {
+            ModalBottomSheet(
+                onDismissRequest = { showImageSourceSheet.value = false },
+                sheetState = imageSourceSheetState,
+            ) {
+                Text(
+                    text = "Add image",
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+                )
+
+                ListItem(
+                    headlineContent = { Text("Choose from gallery") },
+                    leadingContent = {
+                        Icon(
+                            imageVector = Icons.Default.AddAPhoto,
+                            contentDescription = null,
+                        )
+                    },
+                    modifier = Modifier.clickable {
+                        showImageSourceSheet.value = false
+                        launcher.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                        )
+                    }
+                )
+
+                ListItem(
+                    headlineContent = { Text("Take photo") },
+                    leadingContent = {
+                        Icon(
+                            imageVector = Icons.Default.CameraAlt,
+                            contentDescription = null,
+                        )
+                    },
+                    modifier = Modifier.clickable {
+                        showImageSourceSheet.value = false
+                        val hasCameraPermission =
+                            ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.CAMERA
+                            ) == PackageManager.PERMISSION_GRANTED
+
+                        if (hasCameraPermission) {
+                            val uri = createTempImageUri(context)
+                            cameraImageUri.value = uri
+                            cameraLauncher.launch(uri)
+                        } else {
+                            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                        }
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
     }
 }
 
@@ -385,4 +477,9 @@ fun AddImageButton(
             )
         }
     }
+}
+
+fun createTempImageUri(context: Context): Uri {
+    val file = File.createTempFile("camera_", ".jpg", context.cacheDir)
+    return FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
 }

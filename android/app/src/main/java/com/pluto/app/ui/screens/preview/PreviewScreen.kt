@@ -1,11 +1,14 @@
 package com.pluto.app.ui.screens.preview
 
-import android.net.Uri
 import android.view.ViewGroup
+import android.webkit.PermissionRequest
+import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -37,6 +40,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -59,6 +64,25 @@ fun PreviewScreen(
     val error by viewModel.error.collectAsState()
     val appName by viewModel.appName.collectAsState()
     val context = LocalContext.current.applicationContext
+
+    // Hold a pending WebView PermissionRequest so we can grant/deny it
+    // after the Android permission dialog resolves.
+    val pendingWebPermission = remember { mutableStateOf<PermissionRequest?>(null) }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        val req = pendingWebPermission.value
+        if (req != null) {
+            if (granted) {
+                req.grant(req.resources)
+            } else {
+                req.deny()
+            }
+            pendingWebPermission.value = null
+        }
+    }
+
     LaunchedEffect(Unit) {
         viewModel.loadPreview(context)
     }
@@ -211,11 +235,29 @@ fun PreviewScreen(
                                         }
                                     }
 
+                                // Allow the generated app's JS to request camera access
+                                webChromeClient = object : WebChromeClient() {
+                                    override fun onPermissionRequest(request: PermissionRequest) {
+                                        val needsCamera = request.resources.contains(
+                                            PermissionRequest.RESOURCE_VIDEO_CAPTURE
+                                        )
+                                        if (needsCamera) {
+                                            pendingWebPermission.value = request
+                                            cameraPermissionLauncher.launch(
+                                                android.Manifest.permission.CAMERA
+                                            )
+                                        } else {
+                                            request.deny()
+                                        }
+                                    }
+                                }
+
                                 settings.javaScriptEnabled = true
                                 settings.domStorageEnabled = true
                                 settings.allowFileAccess = true
                                 settings.allowFileAccessFromFileURLs = false
                                 settings.allowUniversalAccessFromFileURLs = false
+                                settings.mediaPlaybackRequiresUserGesture = false
 
                                 // Load via the virtual HTTPS origin
                                 val relativePath = "saved_apps/$appId/index.html"
