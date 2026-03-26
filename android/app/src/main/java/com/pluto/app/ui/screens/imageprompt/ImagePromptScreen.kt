@@ -74,7 +74,7 @@ fun ImagePromptScreen(
     onBack: (() -> Unit)? = null,
     viewModel: ImagePromptViewModel = viewModel(),
 ) {
-    val imageprompt by viewModel.imageprompt.collectAsState()
+    val imageprompt by viewModel.prompt.collectAsState()
     val selectedImages by viewModel.selectedImages.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
