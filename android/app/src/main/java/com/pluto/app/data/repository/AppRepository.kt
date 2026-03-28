@@ -6,6 +6,7 @@ import com.pluto.app.data.api.AnalyzeImagesRequest
 import com.pluto.app.data.api.ApiClient
 import com.pluto.app.data.api.PlutoApiService
 import com.pluto.app.data.model.AppVersionResponse
+import com.pluto.app.data.model.AppVersionsResponse
 import com.pluto.app.data.model.CreateJobRequest
 import com.pluto.app.data.model.CreateJobResponse
 import com.pluto.app.data.model.JobStatusResponse
@@ -93,6 +94,10 @@ class AppRepository(
 
     suspend fun getLatestVersion(appId: String): AppVersionResponse {
         return api.getLatestVersion(appId)
+    }
+
+    suspend fun getVersions(appId: String, limit: Int = 50): AppVersionsResponse {
+        return api.getVersions(appId, limit)
     }
 
     suspend fun downloadArtifact(artifactId: String): ResponseBody {

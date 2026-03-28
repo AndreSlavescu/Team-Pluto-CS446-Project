@@ -16,6 +16,7 @@ import com.pluto.app.ui.screens.myapps.AppsViewModel
 import com.pluto.app.ui.screens.preview.PreviewScreen
 import com.pluto.app.ui.screens.settings.SettingsScreen
 import com.pluto.app.data.auth.TokenStore
+import com.pluto.app.ui.screens.versionhistory.VersionHistoryScreen
 import org.json.JSONArray
 import java.io.File
 
@@ -116,12 +117,17 @@ fun PlutoNavGraph(
         }
 
         composable(
-            route = "preview/{appId}?fromShortcut={fromShortcut}",
+            route = "preview/{appId}?fromShortcut={fromShortcut}&versionId={versionId}",
             arguments = listOf(
                 navArgument("appId") { type = NavType.StringType },
                 navArgument("fromShortcut") {
                     type = NavType.BoolType
                     defaultValue = false
+                },
+                navArgument("versionId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
                 },
             ),
         ) { backStackEntry ->
@@ -137,6 +143,41 @@ fun PlutoNavGraph(
                 },
                 onEdit = {
                     navController.navigate("image-prompt?editAppId=$appId")
+                },
+                onVersionHistory = {
+                    navController.navigate("version-history/$appId")
+                },
+            )
+        }
+
+        // Keep preview without query params for compatibility
+        composable(
+            route = "preview/{appId}",
+            arguments = listOf(navArgument("appId") { type = NavType.StringType }),
+        ) { backStackEntry ->
+            val appId = backStackEntry.arguments?.getString("appId") ?: ""
+            navController.navigate("preview/$appId?versionId=") {
+                popUpTo("preview/$appId") { inclusive = true }
+            }
+        }
+
+        composable(
+            route = "version-history/{appId}",
+            arguments = listOf(navArgument("appId") { type = NavType.StringType }),
+        ) { backStackEntry ->
+            val appId = backStackEntry.arguments?.getString("appId") ?: ""
+            VersionHistoryScreen(
+                onBack = {
+                    navController.popBackStack()
+                },
+                onSelectVersion = { versionId, isLatest ->
+                    if (isLatest) {
+                        navController.navigate("preview/$appId") {
+                            popUpTo("version-history/$appId") { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate("preview/$appId?versionId=$versionId")
+                    }
                 },
             )
         }

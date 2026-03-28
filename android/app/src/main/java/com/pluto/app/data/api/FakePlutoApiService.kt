@@ -2,6 +2,7 @@ package com.pluto.app.data.api
 
 import com.pluto.app.data.model.AppManifest
 import com.pluto.app.data.model.AppVersionResponse
+import com.pluto.app.data.model.AppVersionsResponse
 import com.pluto.app.data.model.Artifact
 import com.pluto.app.data.model.CreateJobRequest
 import com.pluto.app.data.model.CreateJobResponse
@@ -160,6 +161,34 @@ class FakePlutoApiService : PlutoApiService {
                     ui = "compose",
                 ),
         )
+    }
+
+    override suspend fun getVersions(appId: String, limit: Int): AppVersionsResponse {
+        delay(200)
+        val displayName = appToName[appId] ?: "Mock Generated App"
+        val versions = (1..3).map { i ->
+            val versionTimestamp = Instant.now().minusSeconds((3L - i) * 3600).toString()
+            AppVersionResponse(
+                versionId = "mock-version-$appId-v$i",
+                jobId = "mock-job-$appId-v$i",
+                createdAt = versionTimestamp,
+                artifacts = listOf(
+                    Artifact(
+                        type = "web-preview",
+                        downloadUrl = "https://mock.local/v1/artifacts/mock-artifact-$appId/download",
+                        expiresAt = null,
+                        sha256 = "mock-sha-v$i",
+                    ),
+                ),
+                manifest = AppManifest(
+                    displayName = "$displayName v$i",
+                    packageName = "com.pluto.mock.${appId.takeLast(8)}",
+                    features = listOf("mock", "offline"),
+                    ui = "compose",
+                ),
+            )
+        }.takeLast(limit)
+        return AppVersionsResponse(appId = appId, versions = versions)
     }
 
     override suspend fun downloadArtifact(artifactId: String): ResponseBody {
