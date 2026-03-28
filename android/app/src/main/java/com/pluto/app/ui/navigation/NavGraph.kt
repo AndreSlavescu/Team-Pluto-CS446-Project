@@ -15,6 +15,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.pluto.app.data.auth.TokenStore
 import com.pluto.app.ui.screens.auth.AuthScreen
+import com.pluto.app.ui.screens.discovery.DiscoveryScreen
 import com.pluto.app.ui.screens.imageprompt.ImagePromptScreen
 import com.pluto.app.ui.screens.generation.GenerationScreen
 import com.pluto.app.ui.screens.myapps.AppsScreen
@@ -145,6 +146,20 @@ fun PlutoNavGraph(
                 onCreateApps = { navController.navigate("image-prompt") },
                 onOpenSettings = {
                     navController.navigate("settings")
+                },
+                onOpenDiscovery = {
+                    navController.navigate("discovery")
+                },
+            )
+        }
+
+        composable(route = "discovery") {
+            DiscoveryScreen(
+                onOpenApp = { appId ->
+                    navController.navigate("preview/$appId")
+                },
+                onBack = {
+                    navController.popBackStack()
                 },
             )
         }

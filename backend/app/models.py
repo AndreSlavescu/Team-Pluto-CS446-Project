@@ -136,3 +136,26 @@ class UserResponse(CamelModel):
     user_id: str
     email: str
     created_at: datetime
+
+
+class AppSummary(CamelModel):
+    app_id: str
+    display_name: str
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    features: List[str] = Field(default_factory=list)
+    published: bool = False
+    author_email: Optional[str] = None
+
+
+class MyAppsResponse(CamelModel):
+    apps: List[AppSummary]
+
+
+class DiscoverAppsResponse(CamelModel):
+    apps: List[AppSummary]
+
+
+class PublishResponse(CamelModel):
+    app_id: str
+    published: bool

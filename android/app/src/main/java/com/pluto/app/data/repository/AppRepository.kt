@@ -5,6 +5,7 @@ import android.net.Uri
 import com.pluto.app.data.api.AnalyzeImagesRequest
 import com.pluto.app.data.api.ApiClient
 import com.pluto.app.data.api.PlutoApiService
+import com.pluto.app.data.model.AppSummary
 import com.pluto.app.data.model.AppVersionResponse
 import com.pluto.app.data.model.CreateJobRequest
 import com.pluto.app.data.model.CreateJobResponse
@@ -57,6 +58,22 @@ class AppRepository(
                 else -> e.message ?: "An unexpected error occurred."
             }
         }
+    }
+
+    suspend fun getMyApps(): List<AppSummary> {
+        return api.getMyApps().apps
+    }
+
+    suspend fun discoverApps(): List<AppSummary> {
+        return api.discoverApps().apps
+    }
+
+    suspend fun publishApp(appId: String): Boolean {
+        return api.publishApp(appId).published
+    }
+
+    suspend fun unpublishApp(appId: String): Boolean {
+        return api.unpublishApp(appId).published
     }
 
     suspend fun createJob(

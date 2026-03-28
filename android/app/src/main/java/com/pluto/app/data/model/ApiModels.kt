@@ -111,3 +111,26 @@ data class UserResponse(
     val email: String,
     val createdAt: String,
 )
+
+data class AppSummary(
+    val appId: String,
+    val displayName: String,
+    val createdAt: String,
+    val updatedAt: String? = null,
+    val features: List<String> = emptyList(),
+    val published: Boolean = false,
+    val authorEmail: String? = null,
+)
+
+data class MyAppsResponse(
+    val apps: List<AppSummary>,
+)
+
+data class DiscoverAppsResponse(
+    val apps: List<AppSummary>,
+)
+
+data class PublishResponse(
+    val appId: String,
+    val published: Boolean,
+)

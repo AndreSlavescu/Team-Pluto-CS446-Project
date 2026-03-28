@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.outlined.CheckBoxOutlineBlank
+import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -66,6 +67,7 @@ fun AppsScreen(
     onExportApps: (List<AppsModel>) -> Unit = {},
     onCreateApps: () -> Unit = {},
     onOpenSettings: () -> Unit = {},
+    onOpenDiscovery: () -> Unit = {},
     viewModel: AppsViewModel = viewModel(),
 ) {
     val apps by viewModel.savedApps.collectAsState()
@@ -100,6 +102,19 @@ fun AppsScreen(
                     )
                 },
                 actions = {
+                    IconButton(
+                        onClick = onOpenDiscovery,
+                        colors =
+                            IconButtonDefaults.iconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            ),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Explore,
+                            contentDescription = "My Creations",
+                        )
+                    }
                     IconButton(
                         onClick = onOpenSettings,
                         colors =
