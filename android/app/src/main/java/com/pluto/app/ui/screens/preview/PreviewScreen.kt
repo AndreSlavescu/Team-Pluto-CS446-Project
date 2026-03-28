@@ -230,6 +230,15 @@ fun PreviewScreen(
 
                                 webViewClient =
                                     object : WebViewClient() {
+                                        override fun shouldOverrideUrlLoading(
+                                            view: WebView?,
+                                            request: WebResourceRequest?,
+                                        ): Boolean {
+                                            // Keep all navigation inside the WebView to prevent
+                                            // the "Open Link" intent chooser popup
+                                            return false
+                                        }
+
                                         override fun shouldInterceptRequest(
                                             view: WebView?,
                                             request: WebResourceRequest?,
