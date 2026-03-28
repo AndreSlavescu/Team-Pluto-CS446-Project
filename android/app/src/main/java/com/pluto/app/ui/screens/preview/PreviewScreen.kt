@@ -1,6 +1,7 @@
 package com.pluto.app.ui.screens.preview
 
 import android.Manifest
+import android.content.pm.PackageManager
 import android.view.ViewGroup
 import android.webkit.PermissionRequest
 import android.webkit.WebChromeClient
@@ -10,6 +11,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -42,9 +44,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -72,12 +72,12 @@ fun PreviewScreen(
     val previewDirName by viewModel.previewDirName.collectAsState()
     val context = LocalContext.current.applicationContext
 
-    // Bridge WebView camera permission requests to Android runtime permissions
-    var pendingWebPermission by remember { mutableStateOf<PermissionRequest?>(null) }
+    // Bridge WebView camera permission requests to Android runtime permissions.
+    // Use a plain list ref so the PermissionRequest survives recomposition.
+    val pendingRequests = remember { mutableListOf<PermissionRequest>() }
     val cameraPermissionLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            val req = pendingWebPermission
-            pendingWebPermission = null
+            val req = pendingRequests.removeLastOrNull()
             if (granted && req != null) {
                 req.grant(arrayOf(PermissionRequest.RESOURCE_VIDEO_CAPTURE))
             } else {
@@ -268,12 +268,20 @@ fun PreviewScreen(
                                     object : WebChromeClient() {
                                         override fun onPermissionRequest(request: PermissionRequest?) {
                                             request ?: return
-                                            val resources = request.resources
-                                            if (resources.contains(PermissionRequest.RESOURCE_VIDEO_CAPTURE)) {
-                                                pendingWebPermission = request
-                                                cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-                                            } else {
+                                            if (!request.resources.contains(PermissionRequest.RESOURCE_VIDEO_CAPTURE)) {
                                                 request.deny()
+                                                return
+                                            }
+                                            // If Android camera permission is already granted, approve immediately
+                                            val already = ContextCompat.checkSelfPermission(
+                                                ctx,
+                                                Manifest.permission.CAMERA,
+                                            ) == PackageManager.PERMISSION_GRANTED
+                                            if (already) {
+                                                request.grant(arrayOf(PermissionRequest.RESOURCE_VIDEO_CAPTURE))
+                                            } else {
+                                                pendingRequests.add(request)
+                                                cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
                                             }
                                         }
                                     }
