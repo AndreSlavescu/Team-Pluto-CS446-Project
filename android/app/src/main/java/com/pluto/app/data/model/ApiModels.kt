@@ -65,6 +65,11 @@ data class AppVersionResponse(
     val manifest: AppManifest,
 )
 
+data class AppVersionsResponse(
+    val appId: String,
+    val versions: List<AppVersionResponse>,
+)
+
 data class Artifact(
     val type: String,
     val downloadUrl: String,

@@ -1,6 +1,7 @@
 package com.pluto.app.data.api
 
 import com.pluto.app.data.model.AppVersionResponse
+import com.pluto.app.data.model.AppVersionsResponse
 import com.pluto.app.data.model.CreateJobRequest
 import com.pluto.app.data.model.CreateJobResponse
 import com.pluto.app.data.model.JobStatusResponse
@@ -19,6 +20,7 @@ import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.Part
 import retrofit2.http.Path
+import retrofit2.http.Query
 import retrofit2.http.Streaming
 
 interface PlutoApiService {
@@ -62,6 +64,12 @@ interface PlutoApiService {
     suspend fun getLatestVersion(
         @Path("appId") appId: String,
     ): AppVersionResponse
+
+    @GET("v1/apps/{appId}/versions")
+    suspend fun getVersions(
+        @Path("appId") appId: String,
+        @Query("limit") limit: Int = 50,
+    ): AppVersionsResponse
 
     @Streaming
     @GET("v1/artifacts/{artifactId}/download")

@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -58,12 +59,15 @@ fun PreviewScreen(
     onBack: () -> Unit,
     onOpenApps: () -> Unit,
     onEdit: () -> Unit,
+    onVersionHistory: () -> Unit = {},
     viewModel: PreviewViewModel = viewModel(),
 ) {
     val previewPath by viewModel.previewPath.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val appName by viewModel.appName.collectAsState()
+    val isHistoricalVersion by viewModel.isHistoricalVersion.collectAsState()
+    val previewDirName by viewModel.previewDirName.collectAsState()
     val context = LocalContext.current.applicationContext
 
     // Hold a pending WebView PermissionRequest so we can grant/deny it
@@ -110,7 +114,7 @@ fun PreviewScreen(
                 actions = {
                     if (!hideQuickActions) {
                         IconButton(
-                            onClick = onEdit,
+                            onClick = onVersionHistory,
                             colors =
                                 IconButtonDefaults.iconButtonColors(
                                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -118,9 +122,24 @@ fun PreviewScreen(
                                 ),
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = "Edit App",
+                                imageVector = Icons.Default.History,
+                                contentDescription = "Version History",
                             )
+                        }
+                        if (!isHistoricalVersion) {
+                            IconButton(
+                                onClick = onEdit,
+                                colors =
+                                    IconButtonDefaults.iconButtonColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    ),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = "Edit App",
+                                )
+                            }
                         }
                         IconButton(
                             onClick = onOpenApps,
@@ -194,7 +213,7 @@ fun PreviewScreen(
                 }
 
                 previewPath != null -> {
-                    val appId = viewModel.appId
+                    val webViewDir = previewDirName
                     AndroidView(
                         factory = { ctx ->
                             WebView(ctx).apply {
@@ -276,7 +295,8 @@ fun PreviewScreen(
                                 settings.allowUniversalAccessFromFileURLs = false
                                 settings.mediaPlaybackRequiresUserGesture = false
 
-                                val relativePath = "saved_apps/$appId/index.html"
+                                // Load via the virtual HTTPS origin
+                                val relativePath = "$webViewDir/index.html"
                                 loadUrl("https://plutoapp.local/$relativePath")
                             }
                         },

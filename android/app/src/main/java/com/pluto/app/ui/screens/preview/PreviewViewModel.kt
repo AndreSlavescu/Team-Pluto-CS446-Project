@@ -19,6 +19,7 @@ import java.util.zip.ZipInputStream
 class PreviewViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
     private val repository = AppRepository()
     val appId: String = savedStateHandle["appId"] ?: ""
+    val versionId: String? = savedStateHandle.get<String>("versionId")?.takeIf { it.isNotBlank() }
     private val _previewPath = MutableStateFlow<String?>(null)
     val previewPath: StateFlow<String?> = _previewPath.asStateFlow()
     private val _isLoading = MutableStateFlow(true)
@@ -27,13 +28,24 @@ class PreviewViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
     val error: StateFlow<String?> = _error.asStateFlow()
     private val _appName = MutableStateFlow("Preview")
     val appName: StateFlow<String> = _appName.asStateFlow()
+    private val _isHistoricalVersion = MutableStateFlow(false)
+    val isHistoricalVersion: StateFlow<Boolean> = _isHistoricalVersion.asStateFlow()
+    private val _previewDirName = MutableStateFlow("saved_apps/$appId")
+    val previewDirName: StateFlow<String> = _previewDirName.asStateFlow()
 
     fun loadPreview(context: Context) {
         viewModelScope.launch {
             try {
                 _isLoading.value = true
 
-                val version = repository.getLatestVersion(appId)
+                val version = if (versionId != null) {
+                    _isHistoricalVersion.value = true
+                    val versionsResponse = repository.getVersions(appId)
+                    versionsResponse.versions.find { it.versionId == versionId }
+                        ?: throw Exception("Version not found")
+                } else {
+                    repository.getLatestVersion(appId)
+                }
                 _appName.value = version.manifest.displayName
 
                 val artifact = version.artifacts.firstOrNull() ?: throw Exception("No artifacts found")
@@ -42,10 +54,13 @@ class PreviewViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
 
                 val responseBody = repository.downloadArtifact(artifactId)
 
+                // Use a separate directory for historical versions to avoid overwriting the latest
+                val dirName = if (versionId != null) "saved_apps/${appId}_${versionId}" else "saved_apps/$appId"
+                _previewDirName.value = dirName
                 val previewDir =
                     File(
                         context.filesDir,
-                        "saved_apps/$appId",
+                        dirName,
                     )
                 withContext(Dispatchers.IO) {
                     if (previewDir.exists()) previewDir.deleteRecursively()
