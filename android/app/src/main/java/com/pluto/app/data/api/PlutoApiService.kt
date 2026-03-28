@@ -6,6 +6,9 @@ import com.pluto.app.data.model.CreateJobRequest
 import com.pluto.app.data.model.CreateJobResponse
 import com.pluto.app.data.model.JobStatusResponse
 import com.pluto.app.data.model.LoginRequest
+import com.pluto.app.data.model.DiscoverAppsResponse
+import com.pluto.app.data.model.MyAppsResponse
+import com.pluto.app.data.model.PublishResponse
 import com.pluto.app.data.model.RefreshRequest
 import com.pluto.app.data.model.RegisterRequest
 import com.pluto.app.data.model.TokenResponse
@@ -49,6 +52,22 @@ interface PlutoApiService {
 
     @DELETE("v1/auth/account")
     suspend fun deleteAccount()
+
+    @GET("v1/my-apps")
+    suspend fun getMyApps(): MyAppsResponse
+
+    @GET("v1/discover")
+    suspend fun discoverApps(): DiscoverAppsResponse
+
+    @POST("v1/apps/{appId}/publish")
+    suspend fun publishApp(
+        @Path("appId") appId: String,
+    ): PublishResponse
+
+    @POST("v1/apps/{appId}/unpublish")
+    suspend fun unpublishApp(
+        @Path("appId") appId: String,
+    ): PublishResponse
 
     @POST("v1/generation-jobs")
     suspend fun createGenerationJob(

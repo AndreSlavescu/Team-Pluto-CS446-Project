@@ -42,16 +42,20 @@ from .generator import run_generation_job
 from .models import (
     ApiError,
     AppManifest,
+    AppSummary,
     AppVersionResponse,
     AppVersionsResponse,
     Artifact,
     CancelJobResponse,
     CreateJobRequest,
     CreateJobResponse,
+    DiscoverAppsResponse,
     JobLog,
     JobProgress,
     JobStatusResponse,
     LoginRequest,
+    MyAppsResponse,
+    PublishResponse,
     RefreshRequest,
     RegisterRequest,
     TokenResponse,
@@ -409,6 +413,125 @@ async def upload_file(request: Request, file: UploadFile = File(...)) -> UploadR
         mime_type=record["mimeType"],
         size_bytes=record["sizeBytes"],
     )
+
+
+@app.get("/v1/my-apps", response_model=MyAppsResponse)
+async def list_my_apps(
+    user: dict = Depends(get_current_user),
+) -> MyAppsResponse:
+    apps = store.list_apps_by_owner(user["userId"])
+    summaries: List[AppSummary] = []
+    for app_record in apps:
+        app_id = app_record["appId"]
+        display_name = app_id
+        features: List[str] = []
+        updated_at = _iso_to_dt(app_record["createdAt"])
+
+        version_id = app_record.get("latestVersionId")
+        if version_id:
+            version = store.get_version(version_id)
+            if version:
+                manifest = version.get("manifest", {})
+                resolved = manifest.get("displayName", "")
+                if resolved:
+                    display_name = resolved
+                features = manifest.get("features", [])
+                updated_at = _iso_to_dt(version["createdAt"])
+
+        summaries.append(
+            AppSummary(
+                app_id=app_id,
+                display_name=display_name,
+                created_at=_iso_to_dt(app_record["createdAt"]),
+                updated_at=updated_at,
+                features=features,
+                published=app_record.get("published", False),
+            )
+        )
+
+    summaries.sort(key=lambda s: s.updated_at or s.created_at, reverse=True)
+    return MyAppsResponse(apps=summaries)
+
+
+@app.post("/v1/apps/{app_id}/publish", response_model=PublishResponse)
+async def publish_app(
+    app_id: str,
+    user: dict = Depends(get_current_user),
+) -> PublishResponse:
+    _validate_id(app_id, "app")
+    app_record = store.get_app(app_id)
+    if not app_record:
+        _raise_http(404, "APP_NOT_FOUND", "App not found")
+    if app_record.get("ownerId") != user["userId"]:
+        _raise_http(403, "FORBIDDEN", "You can only publish your own apps")
+    if not app_record.get("latestVersionId"):
+        _raise_http(
+            400, "NO_VERSION", "App must have at least one version before publishing"
+        )
+
+    store.set_app_published(app_id, True)
+    return PublishResponse(app_id=app_id, published=True)
+
+
+@app.post("/v1/apps/{app_id}/unpublish", response_model=PublishResponse)
+async def unpublish_app(
+    app_id: str,
+    user: dict = Depends(get_current_user),
+) -> PublishResponse:
+    _validate_id(app_id, "app")
+    app_record = store.get_app(app_id)
+    if not app_record:
+        _raise_http(404, "APP_NOT_FOUND", "App not found")
+    if app_record.get("ownerId") != user["userId"]:
+        _raise_http(403, "FORBIDDEN", "You can only unpublish your own apps")
+
+    store.set_app_published(app_id, False)
+    return PublishResponse(app_id=app_id, published=False)
+
+
+@app.get("/v1/discover", response_model=DiscoverAppsResponse)
+async def discover_apps() -> DiscoverAppsResponse:
+    apps = store.list_published_apps()
+    summaries: List[AppSummary] = []
+    for app_record in apps:
+        app_id = app_record["appId"]
+        display_name = app_id
+        features: List[str] = []
+        updated_at = _iso_to_dt(app_record["createdAt"])
+
+        version_id = app_record.get("latestVersionId")
+        if version_id:
+            version = store.get_version(version_id)
+            if version:
+                manifest = version.get("manifest", {})
+                resolved = manifest.get("displayName", "")
+                if resolved:
+                    display_name = resolved
+                features = manifest.get("features", [])
+                updated_at = _iso_to_dt(version["createdAt"])
+
+        author_email: str | None = None
+        owner_id = app_record.get("ownerId")
+        if owner_id:
+            owner = db.get_user(owner_id)
+            if owner:
+                email = owner.get("email", "")
+                author_email = email.split("@")[0] + "@..." if email else None
+
+        summaries.append(
+            AppSummary(
+                app_id=app_id,
+                display_name=display_name,
+                created_at=_iso_to_dt(app_record["createdAt"]),
+                updated_at=updated_at,
+                features=features,
+                published=True,
+                author_email=author_email,
+            )
+        )
+
+    summaries.sort(key=lambda s: s.updated_at or s.created_at, reverse=True)
+    return DiscoverAppsResponse(apps=summaries)
 
 
 @app.post("/v1/generation-jobs", response_model=CreateJobResponse)

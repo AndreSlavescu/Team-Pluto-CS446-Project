@@ -1,6 +1,7 @@
 package com.pluto.app.data.api
 
 import com.pluto.app.data.model.AppManifest
+import com.pluto.app.data.model.AppSummary
 import com.pluto.app.data.model.AppVersionResponse
 import com.pluto.app.data.model.AppVersionsResponse
 import com.pluto.app.data.model.Artifact
@@ -10,6 +11,9 @@ import com.pluto.app.data.model.JobLog
 import com.pluto.app.data.model.JobProgress
 import com.pluto.app.data.model.JobStatusResponse
 import com.pluto.app.data.model.LoginRequest
+import com.pluto.app.data.model.DiscoverAppsResponse
+import com.pluto.app.data.model.MyAppsResponse
+import com.pluto.app.data.model.PublishResponse
 import com.pluto.app.data.model.RefreshRequest
 import com.pluto.app.data.model.RegisterRequest
 import com.pluto.app.data.model.TokenResponse
@@ -30,6 +34,7 @@ class FakePlutoApiService : PlutoApiService {
     private val pollCounts = ConcurrentHashMap<String, Int>()
     private val jobToApp = ConcurrentHashMap<String, String>()
     private val appToName = ConcurrentHashMap<String, String>()
+    private val appPublished = ConcurrentHashMap<String, Boolean>()
 
     private val mockToken =
         TokenResponse(
@@ -69,6 +74,55 @@ class FakePlutoApiService : PlutoApiService {
 
     override suspend fun deleteAccount() {
         delay(200)
+    }
+
+    override suspend fun getMyApps(): MyAppsResponse {
+        delay(300)
+        val now = Instant.now().toString()
+        return MyAppsResponse(
+            apps = appToName.map { (appId, name) ->
+                AppSummary(
+                    appId = appId,
+                    displayName = name,
+                    createdAt = now,
+                    updatedAt = now,
+                    features = listOf("mock"),
+                    published = appPublished.getOrDefault(appId, false),
+                )
+            },
+        )
+    }
+
+    override suspend fun discoverApps(): DiscoverAppsResponse {
+        delay(300)
+        val now = Instant.now().toString()
+        return DiscoverAppsResponse(
+            apps = appToName
+                .filter { appPublished.getOrDefault(it.key, false) }
+                .map { (appId, name) ->
+                    AppSummary(
+                        appId = appId,
+                        displayName = name,
+                        createdAt = now,
+                        updatedAt = now,
+                        features = listOf("mock"),
+                        published = true,
+                        authorEmail = "mock@...",
+                    )
+                },
+        )
+    }
+
+    override suspend fun publishApp(appId: String): PublishResponse {
+        delay(200)
+        appPublished[appId] = true
+        return PublishResponse(appId = appId, published = true)
+    }
+
+    override suspend fun unpublishApp(appId: String): PublishResponse {
+        delay(200)
+        appPublished[appId] = false
+        return PublishResponse(appId = appId, published = false)
     }
 
     override suspend fun createGenerationJob(request: CreateJobRequest): CreateJobResponse {
