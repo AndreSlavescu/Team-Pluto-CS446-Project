@@ -1,5 +1,7 @@
 package com.pluto.app.ui.screens.preview
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.view.ViewGroup
 import android.webkit.PermissionRequest
 import android.webkit.WebChromeClient
@@ -9,6 +11,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -41,7 +44,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -70,30 +72,19 @@ fun PreviewScreen(
     val previewDirName by viewModel.previewDirName.collectAsState()
     val context = LocalContext.current.applicationContext
 
-    // Hold a pending WebView PermissionRequest so we can grant/deny it
-    // after the Android permission dialog resolves.
-    val pendingWebPermission = remember { mutableStateOf<PermissionRequest?>(null) }
-
-    val cameraPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        val req = pendingWebPermission.value
-        if (req != null) {
-            if (granted) {
-                val allowedResources = req.resources.filter {
-                    it == PermissionRequest.RESOURCE_VIDEO_CAPTURE
-                }.toTypedArray()
-                if (allowedResources.isNotEmpty()) {
-                    req.grant(allowedResources)
-                } else {
-                    req.deny()
-                }
+    // Bridge WebView camera/mic permission requests to Android runtime permissions.
+    // Use a plain list ref so the PermissionRequest survives recomposition.
+    val pendingRequests = remember { mutableListOf<PermissionRequest>() }
+    val mediaPermissionLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
+            val req = pendingRequests.removeLastOrNull() ?: return@rememberLauncherForActivityResult
+            val allGranted = results.values.all { it }
+            if (allGranted) {
+                req.grant(req.resources)
             } else {
                 req.deny()
             }
-            pendingWebPermission.value = null
         }
-    }
 
     LaunchedEffect(Unit) {
         viewModel.loadPreview(context)
@@ -223,6 +214,9 @@ fun PreviewScreen(
                                         ViewGroup.LayoutParams.MATCH_PARENT,
                                     )
 
+                                // Use WebViewAssetLoader to serve local files from a virtual
+                                // HTTPS origin. This allows the generated app's fetch() calls
+                                // to reach the backend (file:// blocks cross-origin requests).
                                 val assetLoader =
                                     WebViewAssetLoader.Builder()
                                         .setDomain("plutoapp.local")
@@ -237,11 +231,38 @@ fun PreviewScreen(
 
                                 webViewClient =
                                     object : WebViewClient() {
+                                        override fun shouldOverrideUrlLoading(
+                                            view: WebView?,
+                                            request: WebResourceRequest?,
+                                        ): Boolean {
+                                            // Keep all navigation inside the WebView
+                                            return false
+                                        }
+
                                         override fun shouldInterceptRequest(
                                             view: WebView?,
                                             request: WebResourceRequest?,
                                         ): WebResourceResponse? {
-                                            return request?.url?.let { assetLoader.shouldInterceptRequest(it) }
+                                            val uri = request?.url ?: return null
+                                            val response = assetLoader.shouldInterceptRequest(uri)
+                                            // Inject auth token script into the HTML before any
+                                            // other JS runs, so AppDB._token is set at parse time.
+                                            val authToken = TokenStore.getAccessToken()
+                                            if (response != null &&
+                                                authToken != null &&
+                                                uri.path?.endsWith("index.html") == true
+                                            ) {
+                                                val html = response.data.bufferedReader().readText()
+                                                val injection =
+                                                    "<script>localStorage.setItem('pluto_token','$authToken');</script>"
+                                                val patched = html.replaceFirst("<head>", "<head>$injection")
+                                                return WebResourceResponse(
+                                                    "text/html",
+                                                    "utf-8",
+                                                    patched.byteInputStream(),
+                                                )
+                                            }
+                                            return response
                                         }
 
                                         override fun onPageFinished(
@@ -249,44 +270,45 @@ fun PreviewScreen(
                                             url: String?,
                                         ) {
                                             super.onPageFinished(view, url)
-                                            val token = TokenStore.getAccessToken()
-                                            if (token != null) {
+                                            val authToken = TokenStore.getAccessToken()
+                                            if (authToken != null) {
                                                 view?.evaluateJavascript(
-                                                    "localStorage.setItem('pluto_token', '$token');",
+                                                    "if(typeof AppDB!=='undefined')AppDB._token='$authToken';",
                                                     null,
                                                 )
                                             }
                                         }
                                     }
 
-                                webChromeClient = object : WebChromeClient() {
-                                    override fun onPermissionRequest(request: PermissionRequest) {
-                                        val needsCamera = request.resources.contains(
-                                            PermissionRequest.RESOURCE_VIDEO_CAPTURE
-                                        )
-                                        if (needsCamera) {
-                                            // Deny any existing pending request before overwriting
-                                            val existingRequest = pendingWebPermission.value
-                                            if (existingRequest != null && existingRequest != request) {
-                                                existingRequest.deny()
+                                // Handle camera/media permission requests from generated apps
+                                webChromeClient =
+                                    object : WebChromeClient() {
+                                        override fun onPermissionRequest(request: PermissionRequest?) {
+                                            request ?: return
+                                            val resources = request.resources
+                                            val wantsCamera = resources.contains(PermissionRequest.RESOURCE_VIDEO_CAPTURE)
+                                            val wantsMic = resources.contains(PermissionRequest.RESOURCE_AUDIO_CAPTURE)
+                                            if (!wantsCamera && !wantsMic) {
+                                                request.deny()
+                                                return
                                             }
-                                            pendingWebPermission.value = request
-                                            cameraPermissionLauncher.launch(
-                                                android.Manifest.permission.CAMERA
-                                            )
-                                        } else {
-                                            request.deny()
+                                            // Map WebView resources to Android permissions
+                                            val needed = mutableListOf<String>()
+                                            if (wantsCamera) needed.add(Manifest.permission.CAMERA)
+                                            if (wantsMic) needed.add(Manifest.permission.RECORD_AUDIO)
+                                            // Check if all needed permissions are already granted
+                                            val allGranted = needed.all {
+                                                ContextCompat.checkSelfPermission(ctx, it) ==
+                                                    PackageManager.PERMISSION_GRANTED
+                                            }
+                                            if (allGranted) {
+                                                request.grant(resources)
+                                            } else {
+                                                pendingRequests.add(request)
+                                                mediaPermissionLauncher.launch(needed.toTypedArray())
+                                            }
                                         }
                                     }
-
-                                    override fun onPermissionRequestCanceled(request: PermissionRequest) {
-                                        // Clear the pending reference if this request was canceled
-                                        if (pendingWebPermission.value == request) {
-                                            pendingWebPermission.value = null
-                                        }
-                                        super.onPermissionRequestCanceled(request)
-                                    }
-                                }
 
                                 settings.javaScriptEnabled = true
                                 settings.domStorageEnabled = true
@@ -295,7 +317,9 @@ fun PreviewScreen(
                                 settings.allowUniversalAccessFromFileURLs = false
                                 settings.mediaPlaybackRequiresUserGesture = false
 
-                                // Load via the virtual HTTPS origin
+                                // Load via the virtual HTTPS origin.
+                                // Token is injected by shouldInterceptRequest into
+                                // the HTML before any JS parses.
                                 val relativePath = "$webViewDir/index.html"
                                 loadUrl("https://plutoapp.local/$relativePath")
                             }
