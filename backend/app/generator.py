@@ -126,6 +126,10 @@ To stop the camera when done:
   stream.getTracks().forEach(t => t.stop());
 
 Always wrap getUserMedia in a try/catch and show a friendly message if the user denies permission.
+
+IMPORTANT: Do NOT store captured images/photos in AppDB — base64 image data is too large for the
+database item size limit. Instead, store captured photos in localStorage or display them directly
+as inline data URLs. If the app needs a gallery, keep the array of data URLs in localStorage.
 """.strip()
 
 EDIT_HTML_SYSTEM_PROMPT = (
