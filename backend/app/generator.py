@@ -54,10 +54,10 @@ A backend data API is available for persistent, cross-device data storage. Embed
 
 const AppDB = {
   _base: '{{BACKEND_URL}}/v1/apps/{{APP_ID}}/db',
-  _token: localStorage.getItem('pluto_token'),
   _headers() {
     const h = {'Content-Type': 'application/json'};
-    if (this._token) h['Authorization'] = 'Bearer ' + this._token;
+    const t = this._token || localStorage.getItem('pluto_token');
+    if (t) h['Authorization'] = 'Bearer ' + t;
     return h;
   },
   async list(collection, params) {

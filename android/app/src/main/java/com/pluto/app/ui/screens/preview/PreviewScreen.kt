@@ -256,8 +256,16 @@ fun PreviewScreen(
                                             // AppDB JS helper can authenticate with the backend.
                                             val token = TokenStore.getAccessToken()
                                             if (token != null) {
+                                                // Set in localStorage AND update the already-cached
+                                                // AppDB._token so requests made before onPageFinished
+                                                // don't fail with 401.
                                                 view?.evaluateJavascript(
-                                                    "localStorage.setItem('pluto_token', '$token');",
+                                                    """
+                                                    localStorage.setItem('pluto_token', '$token');
+                                                    if (typeof AppDB !== 'undefined') {
+                                                        AppDB._token = '$token';
+                                                    }
+                                                    """.trimIndent(),
                                                     null,
                                                 )
                                             }
