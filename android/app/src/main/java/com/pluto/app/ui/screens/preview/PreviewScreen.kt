@@ -75,7 +75,7 @@ fun PreviewScreen(
         val req = pendingWebPermission.value
         if (req != null) {
             if (granted) {
-                req.grant(req.resources)
+                req.grant(req.resources.filter { it == PermissionRequest.RESOURCE_VIDEO_CAPTURE }.toTypedArray())
             } else {
                 req.deny()
             }
@@ -242,6 +242,7 @@ fun PreviewScreen(
                                             PermissionRequest.RESOURCE_VIDEO_CAPTURE
                                         )
                                         if (needsCamera) {
+                                            pendingWebPermission.value?.deny()
                                             pendingWebPermission.value = request
                                             cameraPermissionLauncher.launch(
                                                 android.Manifest.permission.CAMERA

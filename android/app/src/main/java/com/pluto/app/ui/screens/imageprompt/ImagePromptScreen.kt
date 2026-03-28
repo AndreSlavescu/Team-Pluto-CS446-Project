@@ -106,6 +106,11 @@ fun ImagePromptScreen(
     ) { success ->
         if (success) {
             cameraImageUri.value?.let { uri -> viewModel.addImages(listOf(uri)) }
+        } else {
+            cameraImageUri.value?.let { uri ->
+                try { context.contentResolver.delete(uri, null, null) } catch (_: Exception) {}
+            }
+            cameraImageUri.value = null
         }
     }
 
@@ -114,8 +119,10 @@ fun ImagePromptScreen(
     ) { granted ->
         if (granted) {
             val uri = createTempImageUri(context)
-            cameraImageUri.value = uri
-            cameraLauncher.launch(uri)
+            if (uri != null) {
+                cameraImageUri.value = uri
+                cameraLauncher.launch(uri)
+            }
         }
     }
 
@@ -399,8 +406,10 @@ fun ImagePromptScreen(
 
                         if (hasCameraPermission) {
                             val uri = createTempImageUri(context)
-                            cameraImageUri.value = uri
-                            cameraLauncher.launch(uri)
+                            if (uri != null) {
+                                cameraImageUri.value = uri
+                                cameraLauncher.launch(uri)
+                            }
                         } else {
                             cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
                         }
@@ -479,7 +488,12 @@ fun AddImageButton(
     }
 }
 
-fun createTempImageUri(context: Context): Uri {
-    val file = File.createTempFile("camera_", ".jpg", context.cacheDir)
-    return FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
+private fun createTempImageUri(context: Context): Uri? {
+    return try {
+        val cameraDir = File(context.cacheDir, "camera_images").apply { mkdirs() }
+        val file = File.createTempFile("camera_", ".jpg", cameraDir)
+        FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
+    } catch (e: Exception) {
+        null
+    }
 }
