@@ -30,6 +30,7 @@ Return ONLY valid JSON (no markdown) with this schema:
   "notes": string
 }
 Keep values short and practical.
+The app runs in a WebView with camera access available via getUserMedia. If the user's prompt involves camera, photos, scanning, QR codes, barcode reading, or AR, include the relevant camera feature in the features list.
 """.strip()
 
 EDIT_BLUEPRINT_SYSTEM_PROMPT = """
@@ -99,6 +100,34 @@ Collections are created automatically on first write. Collection names must be l
 The {{BACKEND_URL}} and {{APP_ID}} placeholders will be replaced automatically — use them exactly as shown.
 """.strip()
 
+CAMERA_CAPABILITY = """
+Camera access is available via the standard browser getUserMedia API. The host Android app
+handles runtime permission prompts automatically — generated code just needs to call the API.
+
+When the user asks for camera features (QR scanner, photo capture, video, AR, barcode reader, etc.),
+use navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }) for the rear camera
+or { facingMode: 'user' } for the front/selfie camera.
+
+Example — show a live camera preview:
+  const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+  const video = document.createElement('video');
+  video.srcObject = stream;
+  video.setAttribute('playsinline', '');
+  video.play();
+
+To capture a still frame from the video feed:
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  const dataUrl = canvas.toDataURL('image/jpeg');
+
+To stop the camera when done:
+  stream.getTracks().forEach(t => t.stop());
+
+Always wrap getUserMedia in a try/catch and show a friendly message if the user denies permission.
+""".strip()
+
 EDIT_HTML_SYSTEM_PROMPT = (
     """
 You are an expert mobile web developer. You are given the HTML source of an existing app, an updated blueprint, and the user's change request.
@@ -115,6 +144,8 @@ Requirements:
 
 """
     + APPDB_JS_HELPER
+    + "\n\n"
+    + CAMERA_CAPABILITY
     + """
 
 Return ONLY the raw HTML starting with <!doctype html>. No markdown fences, no explanation.
@@ -135,6 +166,8 @@ Requirements:
 
 """
     + APPDB_JS_HELPER
+    + "\n\n"
+    + CAMERA_CAPABILITY
     + """
 
 Return ONLY the raw HTML starting with <!doctype html>. No markdown fences, no explanation.
