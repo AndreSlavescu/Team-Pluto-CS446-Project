@@ -72,16 +72,17 @@ fun PreviewScreen(
     val previewDirName by viewModel.previewDirName.collectAsState()
     val context = LocalContext.current.applicationContext
 
-    // Bridge WebView camera permission requests to Android runtime permissions.
+    // Bridge WebView camera/mic permission requests to Android runtime permissions.
     // Use a plain list ref so the PermissionRequest survives recomposition.
     val pendingRequests = remember { mutableListOf<PermissionRequest>() }
-    val cameraPermissionLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            val req = pendingRequests.removeLastOrNull()
-            if (granted && req != null) {
-                req.grant(arrayOf(PermissionRequest.RESOURCE_VIDEO_CAPTURE))
+    val mediaPermissionLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
+            val req = pendingRequests.removeLastOrNull() ?: return@rememberLauncherForActivityResult
+            val allGranted = results.values.all { it }
+            if (allGranted) {
+                req.grant(req.resources)
             } else {
-                req?.deny()
+                req.deny()
             }
         }
 
@@ -268,20 +269,27 @@ fun PreviewScreen(
                                     object : WebChromeClient() {
                                         override fun onPermissionRequest(request: PermissionRequest?) {
                                             request ?: return
-                                            if (!request.resources.contains(PermissionRequest.RESOURCE_VIDEO_CAPTURE)) {
+                                            val resources = request.resources
+                                            val wantsCamera = resources.contains(PermissionRequest.RESOURCE_VIDEO_CAPTURE)
+                                            val wantsMic = resources.contains(PermissionRequest.RESOURCE_AUDIO_CAPTURE)
+                                            if (!wantsCamera && !wantsMic) {
                                                 request.deny()
                                                 return
                                             }
-                                            // If Android camera permission is already granted, approve immediately
-                                            val already = ContextCompat.checkSelfPermission(
-                                                ctx,
-                                                Manifest.permission.CAMERA,
-                                            ) == PackageManager.PERMISSION_GRANTED
-                                            if (already) {
-                                                request.grant(arrayOf(PermissionRequest.RESOURCE_VIDEO_CAPTURE))
+                                            // Map WebView resources to Android permissions
+                                            val needed = mutableListOf<String>()
+                                            if (wantsCamera) needed.add(Manifest.permission.CAMERA)
+                                            if (wantsMic) needed.add(Manifest.permission.RECORD_AUDIO)
+                                            // Check if all needed permissions are already granted
+                                            val allGranted = needed.all {
+                                                ContextCompat.checkSelfPermission(ctx, it) ==
+                                                    PackageManager.PERMISSION_GRANTED
+                                            }
+                                            if (allGranted) {
+                                                request.grant(resources)
                                             } else {
                                                 pendingRequests.add(request)
-                                                cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                                                mediaPermissionLauncher.launch(needed.toTypedArray())
                                             }
                                         }
                                     }
