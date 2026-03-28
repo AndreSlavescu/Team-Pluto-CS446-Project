@@ -235,8 +235,7 @@ fun PreviewScreen(
                                             view: WebView?,
                                             request: WebResourceRequest?,
                                         ): Boolean {
-                                            // Keep all navigation inside the WebView to prevent
-                                            // the "Open Link" intent chooser popup
+                                            // Keep all navigation inside the WebView
                                             return false
                                         }
 
@@ -244,7 +243,26 @@ fun PreviewScreen(
                                             view: WebView?,
                                             request: WebResourceRequest?,
                                         ): WebResourceResponse? {
-                                            return request?.url?.let { assetLoader.shouldInterceptRequest(it) }
+                                            val uri = request?.url ?: return null
+                                            val response = assetLoader.shouldInterceptRequest(uri)
+                                            // Inject auth token script into the HTML before any
+                                            // other JS runs, so AppDB._token is set at parse time.
+                                            val authToken = TokenStore.getAccessToken()
+                                            if (response != null &&
+                                                authToken != null &&
+                                                uri.path?.endsWith("index.html") == true
+                                            ) {
+                                                val html = response.data.bufferedReader().readText()
+                                                val injection =
+                                                    "<script>localStorage.setItem('pluto_token','$authToken');</script>"
+                                                val patched = html.replaceFirst("<head>", "<head>$injection")
+                                                return WebResourceResponse(
+                                                    "text/html",
+                                                    "utf-8",
+                                                    patched.byteInputStream(),
+                                                )
+                                            }
+                                            return response
                                         }
 
                                         override fun onPageFinished(
@@ -252,20 +270,10 @@ fun PreviewScreen(
                                             url: String?,
                                         ) {
                                             super.onPageFinished(view, url)
-                                            // Inject the JWT token into localStorage so the
-                                            // AppDB JS helper can authenticate with the backend.
-                                            val token = TokenStore.getAccessToken()
-                                            if (token != null) {
-                                                // Set in localStorage AND update the already-cached
-                                                // AppDB._token so requests made before onPageFinished
-                                                // don't fail with 401.
+                                            val authToken = TokenStore.getAccessToken()
+                                            if (authToken != null) {
                                                 view?.evaluateJavascript(
-                                                    """
-                                                    localStorage.setItem('pluto_token', '$token');
-                                                    if (typeof AppDB !== 'undefined') {
-                                                        AppDB._token = '$token';
-                                                    }
-                                                    """.trimIndent(),
+                                                    "if(typeof AppDB!=='undefined')AppDB._token='$authToken';",
                                                     null,
                                                 )
                                             }
@@ -324,7 +332,9 @@ fun PreviewScreen(
                                 settings.allowUniversalAccessFromFileURLs = false
                                 settings.mediaPlaybackRequiresUserGesture = false
 
-                                // Load via the virtual HTTPS origin
+                                // Load via the virtual HTTPS origin.
+                                // Token is injected by shouldInterceptRequest into
+                                // the HTML before any JS parses.
                                 val relativePath = "$webViewDir/index.html"
                                 loadUrl("https://plutoapp.local/$relativePath")
                             }
