@@ -96,7 +96,7 @@ class DataStore:
             "versionIds": [],
             "latestVersionId": None,
             "ownerId": owner_id,
-            "published": False,
+            "published": True,
         }
         with self._lock:
             self._state["apps"][app_id] = record
@@ -106,7 +106,9 @@ class DataStore:
     def get_app(self, app_id: str) -> Optional[Dict[str, Any]]:
         return self._state["apps"].get(app_id)
 
-    def set_app_published(self, app_id: str, published: bool) -> Optional[Dict[str, Any]]:
+    def set_app_published(
+        self, app_id: str, published: bool
+    ) -> Optional[Dict[str, Any]]:
         with self._lock:
             app = self._state["apps"].get(app_id)
             if not app:

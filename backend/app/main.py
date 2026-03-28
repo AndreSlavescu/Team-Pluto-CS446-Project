@@ -465,7 +465,9 @@ async def publish_app(
     if app_record.get("ownerId") != user["userId"]:
         _raise_http(403, "FORBIDDEN", "You can only publish your own apps")
     if not app_record.get("latestVersionId"):
-        _raise_http(400, "NO_VERSION", "App must have at least one version before publishing")
+        _raise_http(
+            400, "NO_VERSION", "App must have at least one version before publishing"
+        )
 
     store.set_app_published(app_id, True)
     return PublishResponse(app_id=app_id, published=True)
