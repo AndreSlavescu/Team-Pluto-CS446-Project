@@ -15,6 +15,7 @@ import com.pluto.app.ui.screens.myapps.AppsScreen
 import com.pluto.app.ui.screens.myapps.AppsViewModel
 import com.pluto.app.ui.screens.preview.PreviewScreen
 import com.pluto.app.ui.screens.settings.SettingsScreen
+import com.pluto.app.data.auth.TokenStore
 import org.json.JSONArray
 import java.io.File
 
@@ -39,13 +40,15 @@ fun PlutoNavGraph(
         } else {
             postAuthDestination
         }
-    val startDestination =
-        if (!initialOpenAppId.isNullOrBlank()) {
-            // Home-screen app shortcuts should open directly without auth.
-            "preview/$initialOpenAppId?fromShortcut=true"
-        } else {
+    val startDestination = when {
+        !initialOpenAppId.isNullOrBlank() && TokenStore.isLoggedIn() && TokenStore.isBiometricEnabled() ->
             "auth"
-        }
+        !initialOpenAppId.isNullOrBlank() && TokenStore.isLoggedIn() ->
+            "preview/$initialOpenAppId?fromShortcut=true"
+        TokenStore.isLoggedIn() && !TokenStore.isBiometricEnabled() ->
+            postAuthDestination
+        else -> "auth"
+    }
 
     NavHost(
         navController = navController,

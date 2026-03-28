@@ -1,7 +1,5 @@
 package com.pluto.app.ui.screens.auth
 
-import android.content.Context
-import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -59,6 +57,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.pluto.app.R
+import com.pluto.app.util.isBiometricAvailable
 
 @Composable
 fun AuthScreen(
@@ -311,10 +310,3 @@ fun AuthScreen(
         }
     }
 }
-
-private fun isBiometricAvailable(context: Context): Boolean {
-    val biometricManager = BiometricManager.from(context)
-    return biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG) ==
-        BiometricManager.BIOMETRIC_SUCCESS
-}
-

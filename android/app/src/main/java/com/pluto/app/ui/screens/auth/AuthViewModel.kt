@@ -89,6 +89,12 @@ class AuthViewModel : ViewModel() {
     }
 
     fun onBiometricUnlockSuccess() {
+        val accessToken = TokenStore.getAccessToken()
+        if (accessToken.isNullOrBlank()) {
+            _error.value = "Session expired. Please log in again."
+            _requiresBiometricUnlock.value = false
+            return
+        }
         _requiresBiometricUnlock.value = false
         _error.value = null
         _authSuccess.value = true

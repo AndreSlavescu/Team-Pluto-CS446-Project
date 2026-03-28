@@ -1,7 +1,5 @@
 package com.pluto.app.ui.screens.settings
 
-import android.content.Context
-import androidx.biometric.BiometricManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -44,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import com.pluto.app.BuildConfig
 import com.pluto.app.data.auth.AuthRepository
 import com.pluto.app.data.auth.TokenStore
+import com.pluto.app.util.isBiometricAvailable
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -297,10 +296,4 @@ private val PRIVACY_POLICY_TEXT =
     Contact
     If you have questions about this policy, contact us at pluto-cs446@uwaterloo.ca.
     """.trimIndent()
-
-private fun isBiometricAvailable(context: Context): Boolean {
-    val biometricManager = BiometricManager.from(context)
-    return biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG) ==
-        BiometricManager.BIOMETRIC_SUCCESS
-}
 
