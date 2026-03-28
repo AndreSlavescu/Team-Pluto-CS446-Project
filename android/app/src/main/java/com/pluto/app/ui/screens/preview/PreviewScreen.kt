@@ -75,7 +75,14 @@ fun PreviewScreen(
         val req = pendingWebPermission.value
         if (req != null) {
             if (granted) {
-                req.grant(req.resources.filter { it == PermissionRequest.RESOURCE_VIDEO_CAPTURE }.toTypedArray())
+                val allowedResources = req.resources.filter {
+                    it == PermissionRequest.RESOURCE_VIDEO_CAPTURE
+                }.toTypedArray()
+                if (allowedResources.isNotEmpty()) {
+                    req.grant(allowedResources)
+                } else {
+                    req.deny()
+                }
             } else {
                 req.deny()
             }
@@ -194,9 +201,6 @@ fun PreviewScreen(
                                         ViewGroup.LayoutParams.MATCH_PARENT,
                                     )
 
-                                // Use WebViewAssetLoader to serve local files from a virtual
-                                // HTTPS origin. This allows the generated app's fetch() calls
-                                // to reach the backend (file:// blocks cross-origin requests).
                                 val assetLoader =
                                     WebViewAssetLoader.Builder()
                                         .setDomain("plutoapp.local")
@@ -223,8 +227,6 @@ fun PreviewScreen(
                                             url: String?,
                                         ) {
                                             super.onPageFinished(view, url)
-                                            // Inject the JWT token into localStorage so the
-                                            // AppDB JS helper can authenticate with the backend.
                                             val token = TokenStore.getAccessToken()
                                             if (token != null) {
                                                 view?.evaluateJavascript(
@@ -235,14 +237,17 @@ fun PreviewScreen(
                                         }
                                     }
 
-                                // Allow the generated app's JS to request camera access
                                 webChromeClient = object : WebChromeClient() {
                                     override fun onPermissionRequest(request: PermissionRequest) {
                                         val needsCamera = request.resources.contains(
                                             PermissionRequest.RESOURCE_VIDEO_CAPTURE
                                         )
                                         if (needsCamera) {
-                                            pendingWebPermission.value?.deny()
+                                            // Deny any existing pending request before overwriting
+                                            val existingRequest = pendingWebPermission.value
+                                            if (existingRequest != null && existingRequest != request) {
+                                                existingRequest.deny()
+                                            }
                                             pendingWebPermission.value = request
                                             cameraPermissionLauncher.launch(
                                                 android.Manifest.permission.CAMERA
@@ -250,6 +255,14 @@ fun PreviewScreen(
                                         } else {
                                             request.deny()
                                         }
+                                    }
+
+                                    override fun onPermissionRequestCanceled(request: PermissionRequest) {
+                                        // Clear the pending reference if this request was canceled
+                                        if (pendingWebPermission.value == request) {
+                                            pendingWebPermission.value = null
+                                        }
+                                        super.onPermissionRequestCanceled(request)
                                     }
                                 }
 
@@ -260,7 +273,6 @@ fun PreviewScreen(
                                 settings.allowUniversalAccessFromFileURLs = false
                                 settings.mediaPlaybackRequiresUserGesture = false
 
-                                // Load via the virtual HTTPS origin
                                 val relativePath = "saved_apps/$appId/index.html"
                                 loadUrl("https://plutoapp.local/$relativePath")
                             }
