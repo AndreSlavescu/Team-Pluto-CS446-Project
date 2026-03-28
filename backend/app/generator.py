@@ -72,15 +72,19 @@ const AppDB = {
     return r.json();
   },
   async create(collection, data) {
+    const body = JSON.stringify({data});
+    if (body.length > 60000) throw new Error('AppDB item too large (max 60KB). Store images in localStorage, not AppDB.');
     const r = await fetch(this._base + '/' + collection, {
-      method: 'POST', headers: this._headers(), body: JSON.stringify({data})
+      method: 'POST', headers: this._headers(), body
     });
     if (!r.ok) throw new Error('AppDB create failed: ' + r.status);
     return r.json();
   },
   async update(collection, id, data) {
+    const body = JSON.stringify({data});
+    if (body.length > 60000) throw new Error('AppDB item too large (max 60KB). Store images in localStorage, not AppDB.');
     const r = await fetch(this._base + '/' + collection + '/' + id, {
-      method: 'PUT', headers: this._headers(), body: JSON.stringify({data})
+      method: 'PUT', headers: this._headers(), body
     });
     if (!r.ok) throw new Error('AppDB update failed: ' + r.status);
     return r.json();
@@ -127,9 +131,12 @@ To stop the camera when done:
 
 Always wrap getUserMedia in a try/catch and show a friendly message if the user denies permission.
 
-IMPORTANT: Do NOT store captured images/photos in AppDB — base64 image data is too large for the
-database item size limit. Instead, store captured photos in localStorage or display them directly
-as inline data URLs. If the app needs a gallery, keep the array of data URLs in localStorage.
+CRITICAL: NEVER store images, photos, videos, or any base64/data URL content in AppDB — it will
+be rejected (max 60KB per item). For photo/video galleries, you MUST store captured media in
+localStorage as an array of data URLs. Use AppDB only for small text/JSON data like settings,
+scores, or todo items. Example for a photo gallery:
+  // Save: localStorage.setItem('photos', JSON.stringify([...photos, {uri: dataUrl, ts: Date.now()}]));
+  // Load: const photos = JSON.parse(localStorage.getItem('photos') || '[]');
 """.strip()
 
 EDIT_HTML_SYSTEM_PROMPT = (

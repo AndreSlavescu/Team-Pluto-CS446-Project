@@ -283,26 +283,12 @@ fun PreviewScreen(
                                 // Handle camera/media permission requests from generated apps
                                 webChromeClient =
                                     object : WebChromeClient() {
-                                        override fun onConsoleMessage(
-                                            message: android.webkit.ConsoleMessage?,
-                                        ): Boolean {
-                                            message?.let {
-                                                android.util.Log.d(
-                                                    "PlutoWebView",
-                                                    "${it.messageLevel()}: ${it.message()} [${it.sourceId()}:${it.lineNumber()}]",
-                                                )
-                                            }
-                                            return true
-                                        }
-
                                         override fun onPermissionRequest(request: PermissionRequest?) {
                                             request ?: return
                                             val resources = request.resources
-                                            android.util.Log.d("PlutoWebView", "onPermissionRequest: ${resources.joinToString()}")
                                             val wantsCamera = resources.contains(PermissionRequest.RESOURCE_VIDEO_CAPTURE)
                                             val wantsMic = resources.contains(PermissionRequest.RESOURCE_AUDIO_CAPTURE)
                                             if (!wantsCamera && !wantsMic) {
-                                                android.util.Log.d("PlutoWebView", "Denying: no camera or mic requested")
                                                 request.deny()
                                                 return
                                             }
@@ -315,7 +301,6 @@ fun PreviewScreen(
                                                 ContextCompat.checkSelfPermission(ctx, it) ==
                                                     PackageManager.PERMISSION_GRANTED
                                             }
-                                            android.util.Log.d("PlutoWebView", "allGranted=$allGranted, granting=${resources.joinToString()}")
                                             if (allGranted) {
                                                 request.grant(resources)
                                             } else {
