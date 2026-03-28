@@ -54,6 +54,7 @@ import com.pluto.app.data.auth.TokenStore
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PreviewScreen(
+    hideQuickActions: Boolean = false,
     onBack: () -> Unit,
     onOpenApps: () -> Unit,
     onEdit: () -> Unit,
@@ -107,31 +108,33 @@ fun PreviewScreen(
                     }
                 },
                 actions = {
-                    IconButton(
-                        onClick = onEdit,
-                        colors =
-                            IconButtonDefaults.iconButtonColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            ),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Edit App",
-                        )
-                    }
-                    IconButton(
-                        onClick = onOpenApps,
-                        colors =
-                            IconButtonDefaults.iconButtonColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            ),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Home,
-                            contentDescription = "My Apps",
-                        )
+                    if (!hideQuickActions) {
+                        IconButton(
+                            onClick = onEdit,
+                            colors =
+                                IconButtonDefaults.iconButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                ),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Edit App",
+                            )
+                        }
+                        IconButton(
+                            onClick = onOpenApps,
+                            colors =
+                                IconButtonDefaults.iconButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                ),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Home,
+                                contentDescription = "My Apps",
+                            )
+                        }
                     }
                 },
                 colors =

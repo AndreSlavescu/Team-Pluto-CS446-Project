@@ -8,6 +8,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.core.content.ContextCompat
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -17,9 +24,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -63,6 +72,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -94,6 +104,18 @@ fun ImagePromptScreen(
     val cameraImageUri = remember { mutableStateOf<Uri?>(null) }
     val showImageSourceSheet = remember { mutableStateOf(false) }
     val imageSourceSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val density = LocalDensity.current
+    val isKeyboardOpen = WindowInsets.ime.getBottom(density) > 0
+    val topSpacing by animateDpAsState(
+        targetValue = if (isKeyboardOpen) 12.dp else 24.dp,
+        animationSpec = tween(durationMillis = 180),
+        label = "imagePromptTopSpacing",
+    )
+    val logoBottomSpacing by animateDpAsState(
+        targetValue = if (isKeyboardOpen) 8.dp else 32.dp,
+        animationSpec = tween(durationMillis = 180),
+        label = "imagePromptLogoBottomSpacing",
+    )
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(3)
@@ -187,18 +209,24 @@ fun ImagePromptScreen(
                 .navigationBarsPadding(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(topSpacing))
 
             if (!isEditMode) {
-                // Logo in the middle (only in creation mode)
-                Image(
-                    painter = painterResource(id = R.drawable.pluto),
-                    contentDescription = "Pluto Logo",
-                    modifier = Modifier
-                        .size(120.dp)
-                        .clip(CircleShape)
-                )
-                Spacer(modifier = Modifier.height(32.dp))
+                AnimatedVisibility(
+                    visible = !isKeyboardOpen,
+                    enter = fadeIn(animationSpec = tween(220)) + expandVertically(),
+                    exit = fadeOut(animationSpec = tween(160)) + shrinkVertically(),
+                ) {
+                    // Logo fades/collapses when the IME is shown.
+                    Image(
+                        painter = painterResource(id = R.drawable.pluto),
+                        contentDescription = "Pluto Logo",
+                        modifier = Modifier
+                            .size(120.dp)
+                            .clip(CircleShape)
+                    )
+                }
+                Spacer(modifier = Modifier.height(logoBottomSpacing))
             }
 
             Text(

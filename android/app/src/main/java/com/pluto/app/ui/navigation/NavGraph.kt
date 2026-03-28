@@ -1,11 +1,6 @@
 package com.pluto.app.ui.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
@@ -13,7 +8,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.pluto.app.data.auth.TokenStore
 import com.pluto.app.ui.screens.auth.AuthScreen
 import com.pluto.app.ui.screens.imageprompt.ImagePromptScreen
 import com.pluto.app.ui.screens.generation.GenerationScreen
@@ -21,6 +15,7 @@ import com.pluto.app.ui.screens.myapps.AppsScreen
 import com.pluto.app.ui.screens.myapps.AppsViewModel
 import com.pluto.app.ui.screens.preview.PreviewScreen
 import com.pluto.app.ui.screens.settings.SettingsScreen
+import com.pluto.app.data.auth.TokenStore
 import org.json.JSONArray
 import java.io.File
 
@@ -32,23 +27,27 @@ fun PlutoNavGraph(
     val navController = rememberNavController()
     val context = LocalContext.current
     val appsViewModel: AppsViewModel = viewModel()
-    
-    val startDestination =
-        if (!TokenStore.isLoggedIn()) {
-            "auth"
-        } else if (forceOpenApps || hasExistingApps(context)) {
+
+    val postAuthDestination =
+        if (forceOpenApps || hasExistingApps(context)) {
             "apps"
         } else {
             "image-prompt"
         }
-        
-    var hasHandledInitialAppOpen by remember { mutableStateOf(false) }
-
-    LaunchedEffect(initialOpenAppId, hasHandledInitialAppOpen) {
-        if (!hasHandledInitialAppOpen && !initialOpenAppId.isNullOrBlank()) {
-            hasHandledInitialAppOpen = true
-            navController.navigate("preview/$initialOpenAppId")
+    val authSuccessDestination =
+        if (!initialOpenAppId.isNullOrBlank()) {
+            "preview/$initialOpenAppId?fromShortcut=true"
+        } else {
+            postAuthDestination
         }
+    val startDestination = when {
+        !initialOpenAppId.isNullOrBlank() && TokenStore.isLoggedIn() && TokenStore.isBiometricEnabled() ->
+            "auth"
+        !initialOpenAppId.isNullOrBlank() && TokenStore.isLoggedIn() ->
+            "preview/$initialOpenAppId?fromShortcut=true"
+        TokenStore.isLoggedIn() && !TokenStore.isBiometricEnabled() ->
+            postAuthDestination
+        else -> "auth"
     }
 
     NavHost(
@@ -58,7 +57,7 @@ fun PlutoNavGraph(
         composable("auth") {
             AuthScreen(
                 onAuthSuccess = {
-                    navController.navigate("image-prompt") {
+                    navController.navigate(authSuccessDestination) {
                         popUpTo("auth") { inclusive = true }
                     }
                 },
@@ -117,11 +116,19 @@ fun PlutoNavGraph(
         }
 
         composable(
-            route = "preview/{appId}",
-            arguments = listOf(navArgument("appId") { type = NavType.StringType }),
+            route = "preview/{appId}?fromShortcut={fromShortcut}",
+            arguments = listOf(
+                navArgument("appId") { type = NavType.StringType },
+                navArgument("fromShortcut") {
+                    type = NavType.BoolType
+                    defaultValue = false
+                },
+            ),
         ) { backStackEntry ->
             val appId = backStackEntry.arguments?.getString("appId") ?: ""
+            val fromShortcut = backStackEntry.arguments?.getBoolean("fromShortcut") == true
             PreviewScreen(
+                hideQuickActions = fromShortcut,
                 onBack = {
                     navController.popBackStack()
                 },
