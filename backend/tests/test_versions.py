@@ -104,7 +104,9 @@ class TestGetLatestVersion:
         assert "downloadUrl" in body["artifacts"][0]
 
     def test_latest_version_app_not_found(self, client, auth_header):
-        resp = client.get("/v1/apps/app_0000000000000000/versions/latest", headers=auth_header)
+        resp = client.get(
+            "/v1/apps/app_0000000000000000/versions/latest", headers=auth_header
+        )
         assert resp.status_code == 404
 
     def test_latest_version_no_versions(self, client, auth_header):
@@ -149,7 +151,9 @@ class TestListVersions:
         from app.store import store
 
         app_record = store.create_app(owner_id="test-owner")
-        resp = client.get(f"/v1/apps/{app_record['appId']}/versions", headers=auth_header)
+        resp = client.get(
+            f"/v1/apps/{app_record['appId']}/versions", headers=auth_header
+        )
         assert resp.status_code == 200
         body = resp.json()
         assert body["appId"] == app_record["appId"]
@@ -196,7 +200,9 @@ class TestListVersions:
         """The latest version endpoint should return the same version as the last in the list."""
         app_id, _ = _create_app_with_versions(tmp_path, n_versions=3)
 
-        latest_resp = client.get(f"/v1/apps/{app_id}/versions/latest", headers=auth_header)
+        latest_resp = client.get(
+            f"/v1/apps/{app_id}/versions/latest", headers=auth_header
+        )
         list_resp = client.get(f"/v1/apps/{app_id}/versions", headers=auth_header)
 
         latest = latest_resp.json()
