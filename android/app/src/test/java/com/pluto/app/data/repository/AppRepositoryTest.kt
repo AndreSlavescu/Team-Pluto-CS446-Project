@@ -5,6 +5,9 @@ import com.pluto.app.data.model.AppManifest
 import com.pluto.app.data.model.AppVersionResponse
 import com.pluto.app.data.model.AppVersionsResponse
 import com.pluto.app.data.model.Artifact
+import com.pluto.app.data.model.DiscoverAppsResponse
+import com.pluto.app.data.model.MyAppsResponse
+import com.pluto.app.data.model.PublishResponse
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -52,6 +55,22 @@ class AppRepositoryTest {
             override suspend fun logout(request: com.pluto.app.data.model.RefreshRequest) = throw NotImplementedError()
             override suspend fun getMe() = throw NotImplementedError()
             override suspend fun deleteAccount() = throw NotImplementedError()
+            override suspend fun getMyApps(): MyAppsResponse {
+                TODO("Not yet implemented")
+            }
+
+            override suspend fun discoverApps(): DiscoverAppsResponse {
+                TODO("Not yet implemented")
+            }
+
+            override suspend fun publishApp(appId: String): PublishResponse {
+                TODO("Not yet implemented")
+            }
+
+            override suspend fun unpublishApp(appId: String): PublishResponse {
+                TODO("Not yet implemented")
+            }
+
             override suspend fun createGenerationJob(request: com.pluto.app.data.model.CreateJobRequest) = throw NotImplementedError()
             override suspend fun getGenerationJob(jobId: String) = throw NotImplementedError()
             override suspend fun getLatestVersion(appId: String) = throw NotImplementedError()
@@ -85,6 +104,22 @@ class AppRepositoryTest {
             override suspend fun logout(request: com.pluto.app.data.model.RefreshRequest) = throw NotImplementedError()
             override suspend fun getMe() = throw NotImplementedError()
             override suspend fun deleteAccount() = throw NotImplementedError()
+            override suspend fun getMyApps(): MyAppsResponse {
+                TODO("Not yet implemented")
+            }
+
+            override suspend fun discoverApps(): DiscoverAppsResponse {
+                TODO("Not yet implemented")
+            }
+
+            override suspend fun publishApp(appId: String): PublishResponse {
+                TODO("Not yet implemented")
+            }
+
+            override suspend fun unpublishApp(appId: String): PublishResponse {
+                TODO("Not yet implemented")
+            }
+
             override suspend fun createGenerationJob(request: com.pluto.app.data.model.CreateJobRequest) = throw NotImplementedError()
             override suspend fun getGenerationJob(jobId: String) = throw NotImplementedError()
             override suspend fun getLatestVersion(appId: String) = throw NotImplementedError()
@@ -113,6 +148,22 @@ class AppRepositoryTest {
             override suspend fun logout(request: com.pluto.app.data.model.RefreshRequest) = throw NotImplementedError()
             override suspend fun getMe() = throw NotImplementedError()
             override suspend fun deleteAccount() = throw NotImplementedError()
+            override suspend fun getMyApps(): MyAppsResponse {
+                TODO("Not yet implemented")
+            }
+
+            override suspend fun discoverApps(): DiscoverAppsResponse {
+                TODO("Not yet implemented")
+            }
+
+            override suspend fun publishApp(appId: String): PublishResponse {
+                TODO("Not yet implemented")
+            }
+
+            override suspend fun unpublishApp(appId: String): PublishResponse {
+                TODO("Not yet implemented")
+            }
+
             override suspend fun createGenerationJob(request: com.pluto.app.data.model.CreateJobRequest) = throw NotImplementedError()
             override suspend fun getGenerationJob(jobId: String) = throw NotImplementedError()
             override suspend fun getLatestVersion(appId: String) = throw NotImplementedError()
