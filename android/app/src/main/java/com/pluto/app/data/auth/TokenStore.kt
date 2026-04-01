@@ -11,6 +11,7 @@ object TokenStore {
     private const val KEY_REFRESH = "refresh_token"
     private const val KEY_EMAIL = "user_email"
     private const val KEY_BIOMETRIC_ENABLED = "biometric_enabled"
+    private const val KEY_PENDING_NON_BIOMETRIC_LOGOUT = "pending_non_biometric_logout"
 
     private lateinit var prefs: SharedPreferences
 
@@ -57,6 +58,22 @@ object TokenStore {
 
     fun isLoggedIn(): Boolean = getAccessToken() != null
 
+    fun markPendingNonBiometricLogout() {
+        prefs.edit().putBoolean(KEY_PENDING_NON_BIOMETRIC_LOGOUT, true).apply()
+    }
+
+    fun clearPendingNonBiometricLogout() {
+        prefs.edit().remove(KEY_PENDING_NON_BIOMETRIC_LOGOUT).apply()
+    }
+
+    fun consumePendingNonBiometricLogoutIfNeeded() {
+        val shouldLogout = prefs.getBoolean(KEY_PENDING_NON_BIOMETRIC_LOGOUT, false)
+        clearPendingNonBiometricLogout()
+        if (shouldLogout && !isBiometricEnabled()) {
+            clearSession()
+        }
+    }
+
     fun clearSession() {
         prefs.edit()
             .remove(KEY_ACCESS)
@@ -67,6 +84,9 @@ object TokenStore {
 
     fun clearTokens() {
         clearSession()
-        prefs.edit().remove(KEY_BIOMETRIC_ENABLED).apply()
+        prefs.edit()
+            .remove(KEY_BIOMETRIC_ENABLED)
+            .remove(KEY_PENDING_NON_BIOMETRIC_LOGOUT)
+            .apply()
     }
 }

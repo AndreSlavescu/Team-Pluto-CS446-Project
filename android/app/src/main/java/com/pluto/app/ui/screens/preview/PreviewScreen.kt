@@ -92,18 +92,18 @@ fun PreviewScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(appName) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                        )
-                    }
-                },
-                actions = {
-                    if (!hideQuickActions) {
+            if (!hideQuickActions) {
+                TopAppBar(
+                    title = { Text(appName) },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                            )
+                        }
+                    },
+                    actions = {
                         IconButton(
                             onClick = onVersionHistory,
                             colors =
@@ -145,13 +145,13 @@ fun PreviewScreen(
                                 contentDescription = "My Apps",
                             )
                         }
-                    }
-                },
-                colors =
-                    TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.background,
-                    ),
-            )
+                    },
+                    colors =
+                        TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.background,
+                        ),
+                )
+            }
         },
     ) { padding ->
         Box(
