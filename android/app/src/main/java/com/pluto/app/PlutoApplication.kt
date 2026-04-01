@@ -9,7 +9,7 @@ class PlutoApplication : Application() {
     private var startedActivities = 0
 
     override fun onCreate() {
-        super<Application>.onCreate()
+        super.onCreate()
         TokenStore.init(this)
         TokenStore.consumePendingNonBiometricLogoutIfNeeded()
 
