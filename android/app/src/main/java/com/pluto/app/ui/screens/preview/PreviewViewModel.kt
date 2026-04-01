@@ -54,8 +54,8 @@ class PreviewViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
 
                 val responseBody = repository.downloadArtifact(artifactId)
 
-                // Use a separate directory for historical versions to avoid overwriting the latest
-                val dirName = if (versionId != null) "saved_apps/${appId}_${versionId}" else "saved_apps/$appId"
+                // Historical versions go in preview_cache/ so they don't appear in the saved apps list
+                val dirName = if (versionId != null) "preview_cache/${appId}_${versionId}" else "saved_apps/$appId"
                 _previewDirName.value = dirName
                 val previewDir =
                     File(
