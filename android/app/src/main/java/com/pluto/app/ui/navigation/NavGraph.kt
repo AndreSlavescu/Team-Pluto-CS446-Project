@@ -43,9 +43,7 @@ fun PlutoNavGraph(
             postAuthDestination
         }
     val startDestination = when {
-        !initialOpenAppId.isNullOrBlank() && TokenStore.isLoggedIn() && TokenStore.isBiometricEnabled() ->
-            "auth"
-        !initialOpenAppId.isNullOrBlank() && TokenStore.isLoggedIn() ->
+        !initialOpenAppId.isNullOrBlank() ->
             "preview/$initialOpenAppId?fromShortcut=true"
         TokenStore.isLoggedIn() && !TokenStore.isBiometricEnabled() ->
             postAuthDestination
